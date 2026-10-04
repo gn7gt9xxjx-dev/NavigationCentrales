@@ -15,7 +15,7 @@ Ce fichier guide Claude Code (claude.ai/code) pour travailler dans ce dépôt.
 - **Aucune étape de build, aucun framework.** HTML/CSS/JS natifs servis tels quels. `package.json` ne sert qu'aux outils de dev (tests, icônes). Ne pas introduire de bundler, TypeScript ou dépendance runtime sans demande explicite.
 - **Tout doit marcher hors ligne** : toute ressource utilisée par l'appli est locale (polices dans `fonts/`, Leaflet dans `vendor/`) et listée dans `FILES` de `sw.js`. Seuls la carte (tuiles), la recherche de lieu (Nominatim) et la synchro GitHub nécessitent le réseau, avec un message clair quand il manque.
 - **Après toute modification de fichier servi (HTML, CSS, JS, icônes…), incrémenter `VERSION` dans `sw.js`** (format `AAAA-MM-JJ.n`). Sinon les téléphones gardent l'ancienne version en cache. Ajouter tout nouveau fichier à `FILES`.
-- Les données (`data/centrales.json`) n'ont **pas** besoin de changement de `VERSION` : l'appli relit la liste partagée à chaque lancement.
+- La liste partagée vit dans le dépôt séparé **DataNavigationCentrales** (`data/centrales.json`) : pas de changement de `VERSION` pour la modifier, l'appli la relit à chaque lancement. La copie `data/centrales.json` d'ici n'est qu'un secours embarqué : inutile de la tenir à jour.
 - Interface : phrases courtes, à la casse normale (pas de MAJUSCULES pour les libellés), cibles tactiles ≥ 44 px, clair/sombre via `prefers-color-scheme`, `prefers-reduced-motion` respecté.
 
 ## Architecture
@@ -28,7 +28,7 @@ app.js                toute la logique de l'interface (voir sections ci-dessous)
 sync.js               module Sync : lecture/écriture de data/centrales.json sur GitHub
 sw.js                 service worker : cache-first de tous les fichiers de l'appli
 manifest.webmanifest  installation (nom « Centrales », icônes, standalone)
-data/centrales.json   LA liste partagée (source de vérité)
+data/centrales.json   copie de secours embarquée (1er lancement hors ligne) ; la source de vérité est le dépôt DataNavigationCentrales
 icons/icon.svg        icône source ; PNG générés par `npm run icons`
 tools/extract.py      régénère data/centrales.json depuis l'ancienne page HTML
 tools/render-icons.mjs  SVG → apple-touch-icon.png (180), icon-192.png, icon-512.png
@@ -54,9 +54,9 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 
 ### Synchronisation (sync.js)
 
-- **Lecture sans code** : `raw.githubusercontent.com/.../main/data/centrales.json`, sinon repli sur `data/centrales.json?fresh=…` du site (fonctionne si le dépôt redevient privé ; le SW laisse passer les requêtes `?fresh`).
-- **Lecture/écriture avec code** : API GitHub `contents` (GET pour le `sha`, PUT pour enregistrer = un commit sur `main`). Conflit 409/422 → relecture et nouvel essai (3 fois). Les opérations sont idempotentes.
-- **Code d'édition** = jeton GitHub *fine-grained* limité à ce dépôt, permission *Contents : Read and write*. Stocké dans le localStorage du téléphone. **Ne jamais écrire de jeton dans le dépôt, le code ou les tests** (les tests utilisent le faux jeton `good`).
+- **Lecture sans code** : `raw.githubusercontent.com/gn7gt9xxjx-dev/DataNavigationCentrales/main/data/centrales.json` (dépôt de données **public**). Hors ligne : dernière liste reçue gardée dans le localStorage (`basePlants`), sinon copie embarquée.
+- **Lecture/écriture avec code** : API GitHub `contents` du dépôt de données (GET pour le `sha`, PUT pour enregistrer = un commit sur `main`). Conflit 409/422 → relecture et nouvel essai (3 fois). Les opérations sont idempotentes.
+- **Code d'édition** = jeton GitHub *fine-grained* limité au dépôt de données (aucun accès au dépôt de l'appli), permission *Contents : Read and write*. Stocké dans le localStorage du téléphone. **Ne jamais écrire de jeton dans le dépôt, le code ou les tests** (les tests utilisent le faux jeton `good`).
 - Sans code : lecture seule, `body:not(.can-edit)` masque `#add` et `#remove`.
 
 ## Particularités iOS / Android (à ne pas casser)
@@ -84,7 +84,7 @@ Vérifier visuellement une modification d'interface : capture Playwright en `dev
 
 - `main` = production (publiée automatiquement par GitHub Pages en 1–2 min).
 - Travailler sur une branche, ouvrir une PR, fusionner en squash. Messages de commit en français.
-- L'appli elle-même fait des commits sur `main` (« Ajout de X », « Suppression de Y », « Depuis l'appli Centrales (par …) ») : **toujours `git pull` / partir de `origin/main` à jour** avant de modifier `data/centrales.json`.
+- L'appli elle-même fait des commits sur `main` du dépôt de données (« Ajout de X », « Suppression de Y », « Depuis l'appli Centrales (par …) ») : **toujours `git pull` / partir de `origin/main` à jour** avant de modifier `data/centrales.json` **du dépôt DataNavigationCentrales** (et non d'ici).
 - Les réglages du dépôt (visibilité, Pages, « About ») ne sont pas modifiables depuis l'environnement cloud de Claude Code : les faire faire par Yannick sur github.com.
 
 ## Idées non réalisées (pistes)
