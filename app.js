@@ -50,7 +50,7 @@ function formatKm(km) {
 }
 const formatCoord = (v) => v.toFixed(5).replace(/0+$/, "").replace(/\.$/, "");
 
-const isApple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && "ontouchend" in document;
+const isApple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
 // Liens de navigation. Sur iPhone on passe par les schémas des applis :
@@ -229,6 +229,7 @@ function openSheet(p) {
   for (const [key, el] of [["waze", "#goWaze"], ["gmaps", "#goGmaps"], ["plans", "#goPlans"]]) {
     $(el).classList.toggle("preferred", state.preferredApp === key);
   }
+  $("#goPlans").hidden = !isApple;   // Plans n'existe que sur iPhone
   $("#offlineHint").hidden = navigator.onLine;
   sheet.showModal();
 }

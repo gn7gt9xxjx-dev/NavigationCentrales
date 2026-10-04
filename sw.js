@@ -1,7 +1,7 @@
 // Service worker : met toute l'appli en cache pour qu'elle s'ouvre sans réseau.
 // ➜ Changez VERSION à chaque modification (liste des centrales, design…)
 //   pour que les téléphones téléchargent la nouvelle version.
-const VERSION = "2026-10-04.3";
+const VERSION = "2026-10-04.4";
 const CACHE = `centrales-${VERSION}`;
 
 const FILES = [
@@ -42,7 +42,9 @@ self.addEventListener("activate", (event) => {
 // Cache d'abord : l'appli démarre instantanément, avec ou sans réseau.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+  if (url.searchParams.has("fresh")) return; // lecture de la liste à jour : toujours le réseau
   event.respondWith(
     caches.match(req, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit;
