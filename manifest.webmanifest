@@ -1,0 +1,17 @@
+{
+  "name": "Navigation Centrales",
+  "short_name": "Centrales",
+  "description": "Lancer la navigation vers une centrale, même sans réseau.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF0F3",
+  "theme_color": "#1E4C9A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
