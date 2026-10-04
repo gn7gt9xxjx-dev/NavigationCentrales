@@ -1,8 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#1E4C9A"/>
-  <rect x="44" y="44" width="424" height="424" rx="56" fill="none" stroke="#fff" stroke-width="14"/>
-  <!-- Repère de destination -->
-  <path d="M256 104c-74 0-132 57-132 128 0 92 104 172 124 186a14 14 0 0 0 16 0c20-14 124-94 124-186 0-71-58-128-132-128z" fill="#fff"/>
-  <!-- Éclair -->
-  <path d="M276 150 196 254h52l-18 92 84-112h-54z" fill="#1E4C9A"/>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E5BC6"/><stop offset=".7" stop-color="#7CC4F5"/><stop offset="1" stop-color="#BFE6FF"/></linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29B6F6"/><stop offset="1" stop-color="#0277BD"/></linearGradient>
+    <linearGradient id="dam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4F6F8"/><stop offset="1" stop-color="#AEB8C4"/></linearGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A45"/><stop offset="1" stop-color="#D81B3C"/></linearGradient>
+    <linearGradient id="fall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E1F5FE"/><stop offset="1" stop-color="#4FC3F7"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="410" cy="110" r="38" fill="#FFD54A"/>
+  <path d="M0 300 L80 205 L150 255 L240 160 L330 245 L420 185 L512 250 V512 H0z" fill="#6E8DB5"/>
+  <path d="M240 160 L270 188 L250 190 L232 178z M80 205 L100 228 L82 226z M420 185 L445 208 L425 207z" fill="#fff" opacity=".85"/>
+  <path d="M120 318 Q256 296 392 318 L380 356 H132z" fill="url(#lake)"/>
+  <path d="M0 330 L95 262 L185 330 L170 512 H0z" fill="#2F8A57"/>
+  <path d="M512 322 L420 255 L330 330 L345 512 H512z" fill="#277A4C"/>
+  <path d="M150 352 Q256 330 362 352 L342 440 Q256 424 170 440z" fill="url(#dam)" stroke="#8C98A6" stroke-width="4"/>
+  <path d="M160 378 Q256 360 352 378 M164 404 Q256 388 348 404" fill="none" stroke="#9AA6B4" stroke-width="3"/>
+  <path d="M232 436 Q256 432 280 436 L300 512 H212z" fill="url(#fall)"/>
+  <path d="M0 470 Q120 440 214 470 V512 H0z M512 466 Q400 440 298 470 V512 H512z" fill="#1F6B41"/>
+  <ellipse cx="256" cy="338" rx="34" ry="9" fill="#0B2540" opacity=".35"/>
+  <path d="M256 52c-54 0-96 41-96 93 0 66 76 125 90 136a10 10 0 0 0 12 0c14-11 90-70 90-136 0-52-42-93-96-93z" fill="url(#pin)" stroke="#fff" stroke-width="8"/>
+  <circle cx="256" cy="146" r="44" fill="#fff"/>
+  <path d="M266 108 226 156h26l-10 44 42-54h-27z" fill="#F2A900"/>
 </svg>
