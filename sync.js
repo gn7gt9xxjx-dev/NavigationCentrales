@@ -1,12 +1,12 @@
 "use strict";
 
-// Synchronisation de la liste partagée avec le dépôt GitHub.
-// - Lecture : tout le monde, sans code (fichier brut du dépôt).
-// - Écriture : uniquement avec un « code d'édition » (jeton GitHub limité à ce dépôt),
-//   saisi une fois dans les réglages de l'appli.
+// Synchronisation de la liste partagée avec le dépôt de données (DataNavigationCentrales).
+// - Lecture : tout le monde, sans code (fichier brut du dépôt de données).
+// - Écriture : uniquement avec un « code d'édition » (jeton GitHub limité au dépôt de données,
+//   sans accès au dépôt de l'appli), saisi une fois dans les réglages de l'appli.
 const Sync = (() => {
   const OWNER = "gn7gt9xxjx-dev";
-  const REPO = "NavigationCentrales";
+  const REPO = "DataNavigationCentrales";
   const BRANCH = "main";
   const FILE = "data/centrales.json";
   const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`;
@@ -83,14 +83,11 @@ const Sync = (() => {
       const json = await res.json();
       return { list: validate(JSON.parse(fromBase64(json.content))), sha: json.sha };
     }
-    // 1. fichier brut du dépôt (le plus à jour, si le dépôt est public)
-    // 2. sinon, le fichier publié avec le site (fonctionne aussi avec un dépôt privé)
-    for (const url of [`${RAW}?t=${Date.now()}`, `${FILE}?fresh=${Date.now()}`]) {
-      try {
-        const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
-        if (res.ok) return { list: validate(await res.json()), sha: null };
-      } catch { /* source suivante */ }
-    }
+    // Fichier brut du dépôt de données (public). Sans réseau, l'appli garde la dernière liste reçue.
+    try {
+      const res = await fetch(`${RAW}?t=${Date.now()}`, { cache: "no-store", headers: { Accept: "application/json" } });
+      if (res.ok) return { list: validate(await res.json()), sha: null };
+    } catch { /* injoignable */ }
     throw new SyncError("http", "La liste partagée est injoignable pour le moment.");
   }
 

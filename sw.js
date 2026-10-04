@@ -1,7 +1,7 @@
 // Service worker : met toute l'appli en cache pour qu'elle s'ouvre sans réseau.
 // ➜ Changez VERSION à chaque modification (liste des centrales, design…)
 //   pour que les téléphones téléchargent la nouvelle version.
-const VERSION = "2026-10-04.6";
+const VERSION = "2026-10-04.7";
 const CACHE = `centrales-${VERSION}`;
 
 const FILES = [
@@ -10,7 +10,7 @@ const FILES = [
   "styles.css",
   "app.js",
   "sync.js",
-  "data/centrales.json",
+  "data/centrales.json", // liste de secours embarquée (1er lancement hors ligne)
   "manifest.webmanifest",
   "icons/icon.svg",
   "icons/apple-touch-icon.png",
@@ -44,7 +44,6 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
-  if (url.searchParams.has("fresh")) return; // lecture de la liste à jour : toujours le réseau
   event.respondWith(
     caches.match(req, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit;

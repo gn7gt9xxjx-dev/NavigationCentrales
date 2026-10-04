@@ -20,6 +20,7 @@ let sha = "sha0", rev = 0;
 const commits = [];
 async function github(route) {
   const req = route.request(), url = req.url(), h = { "access-control-allow-origin": "*" };
+  if (!url.includes("/DataNavigationCentrales")) return route.fulfill({ status: 404, json: { message: "mauvais dépôt" }, headers: h });
   if (url.includes("raw.githubusercontent.com")) return route.fulfill({ body: remote, contentType: "application/json", headers: h });
   if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers: { ...h, "access-control-allow-headers": "*", "access-control-allow-methods": "GET,PUT" } });
   if (req.headers()["authorization"] !== "Bearer good") return route.fulfill({ status: 401, json: { message: "Bad credentials" }, headers: h });
