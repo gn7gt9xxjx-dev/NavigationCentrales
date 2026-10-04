@@ -73,6 +73,8 @@ try {
 
   // Code d'édition
   await A.click("#openSettings");
+  assert.match(await A.textContent("#setVersion"), /^Version \d+\.\d+\.\d+ \(cache \d{4}-\d{2}-\d{2}\.\d+\)$/);
+  ok("réglages : numéro de version et de cache affichés");
   await A.fill("#setToken", "bad"); await A.click("#setTokenGo"); await A.waitForTimeout(300);
   assert.match(await A.$eval("#setTokenMsg", (e) => e.textContent), /pas valide/);
   await A.fill("#setToken", "good"); await A.click("#setTokenGo"); await A.waitForTimeout(500);

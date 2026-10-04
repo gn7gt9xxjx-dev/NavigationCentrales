@@ -762,11 +762,26 @@ const Editor = (() => {
   return { open };
 })();
 
+/* ===================== Version ===================== */
+
+// À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
+const APP_VERSION = "1.2.0";
+
+async function renderVersion() {
+  let cache = "";
+  try {
+    const name = (await caches.keys()).find((k) => k.startsWith("centrales-"));
+    if (name) cache = ` (cache ${name.slice("centrales-".length)})`;
+  } catch { /* pas de cache disponible */ }
+  $("#setVersion").textContent = `Version ${APP_VERSION}${cache}`;
+}
+
 /* ===================== Démarrage ===================== */
 
 async function init() {
   bind();
   renderFavCount();
+  renderVersion();
   try {
     const stored = store.get("list", null);
     if (Array.isArray(stored) && stored.length) basePlants = stored;

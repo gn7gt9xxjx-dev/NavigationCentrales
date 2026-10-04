@@ -14,7 +14,7 @@ Ce fichier guide Claude Code (claude.ai/code) pour travailler dans ce dépôt.
 
 - **Aucune étape de build, aucun framework.** HTML/CSS/JS natifs servis tels quels. `package.json` ne sert qu'aux outils de dev (tests, icônes). Ne pas introduire de bundler, TypeScript ou dépendance runtime sans demande explicite.
 - **Tout doit marcher hors ligne** : toute ressource utilisée par l'appli est locale (polices dans `fonts/`, Leaflet dans `vendor/`) et listée dans `FILES` de `sw.js`. Seuls la carte (tuiles), la recherche de lieu (Nominatim) et la synchro GitHub nécessitent le réseau, avec un message clair quand il manque.
-- **Après toute modification de fichier servi (HTML, CSS, JS, icônes…), incrémenter `VERSION` dans `sw.js`** (format `AAAA-MM-JJ.n`). Sinon les téléphones gardent l'ancienne version en cache. Ajouter tout nouveau fichier à `FILES`.
+- **Après toute modification de fichier servi (HTML, CSS, JS, icônes…), incrémenter `VERSION` dans `sw.js`** (format `AAAA-MM-JJ.n`). Incrémenter aussi `APP_VERSION` (app.js, affiché dans Réglages → À propos, format `x.y.z`) et ajouter une ligne dans `CHANGELOG.md`. Sinon les téléphones gardent l'ancienne version en cache. Ajouter tout nouveau fichier à `FILES`.
 - La liste partagée vit dans le dépôt séparé **DataNavigationCentrales** (`data/centrales.json`) : pas de changement de `VERSION` pour la modifier, l'appli la relit à chaque lancement. La copie `data/centrales.json` d'ici n'est qu'un secours embarqué : inutile de la tenir à jour.
 - Interface : phrases courtes, à la casse normale (pas de MAJUSCULES pour les libellés), cibles tactiles ≥ 44 px, clair/sombre via `prefers-color-scheme`, `prefers-reduced-motion` respecté.
 
@@ -32,6 +32,7 @@ data/centrales.json   copie de secours embarquée (1er lancement hors ligne) ; l
 icons/icon.svg        icône source ; PNG générés par `npm run icons`
 tools/extract.py      régénère data/centrales.json depuis l'ancienne page HTML
 tools/render-icons.mjs  SVG → apple-touch-icon.png (180), icon-192.png, icon-512.png
+CHANGELOG.md          historique des versions (numéro `APP_VERSION`)
 tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitHub)
 ```
 
