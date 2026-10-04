@@ -59,4 +59,6 @@ icons/                icône (SVG source + PNG)
 fonts/                Barlow Semi Condensed (licence OFL)
 vendor/leaflet/       bibliothèque de carte (licence BSD) ; fonds OpenStreetMap et Esri, recherche Nominatim
 tools/                scripts d'extraction et de génération des icônes
+tests/e2e.mjs         test de bout en bout (npm install && npm test)
+CLAUDE.md             notes de développement pour Claude Code
 ```

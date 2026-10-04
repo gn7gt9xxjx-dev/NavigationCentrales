@@ -1,0 +1,15 @@
+{
+  "name": "navigation-centrales",
+  "private": true,
+  "type": "module",
+  "description": "Outils de développement uniquement : l'appli elle-même n'a aucune étape de build.",
+  "scripts": {
+    "test": "node tests/e2e.mjs",
+    "icons": "node tools/render-icons.mjs",
+    "extract": "python3 tools/extract.py",
+    "serve": "python3 -m http.server 8765"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}
