@@ -64,9 +64,16 @@ const APPS = {
                         : `https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=d`,
 };
 
+function regionOf(lat, lon) {
+  if (lat < 0 && lon > 54 && lon < 57) return "La Réunion";
+  if (lat > 1 && lat < 7 && lon > -55 && lon < -51) return "Guyane";
+  return "";
+}
+
 /* ===================== État ===================== */
 
-let plants = [];
+let basePlants = [];   // liste livrée avec l'appli (data/centrales.json)
+let plants = [];       // liste affichée = base − supprimées + ajoutées
 const state = {
   mode: "az",
   query: "",
@@ -76,6 +83,8 @@ const state = {
   favs: new Set(store.get("favs", [])),
   recents: store.get("recents", []),
   preferredApp: store.get("preferredApp", ""),
+  added: store.get("added", []),          // centrales ajoutées sur ce téléphone
+  removed: new Set(store.get("removed", [])), // identifiants supprimés
   current: null,
 };
 
@@ -111,6 +120,7 @@ function rowHtml(p, tokens) {
     meta = `<span>${formatCoord(p.lat)}, ${formatCoord(p.lon)}</span>`;
   }
   if (p.r) meta += `<span class="tag">${p.r}</span>`;
+  if (p.user) meta += `<span class="tag">Ajoutée</span>`;
   return `<li><button class="row" data-id="${p.id}">
     <span class="row-main"><span class="row-name">${highlight(p, tokens)}</span><span class="row-meta">${meta}</span></span>
     ${state.favs.has(p.id) ? ICON_STAR : ""}${ICON_CHEV}
@@ -231,13 +241,15 @@ function launched(appKey) {
   setTimeout(() => { closeSheet(); render(); }, 400);
 }
 
-let toastTimer;
-function toast(msg) {
+let toastTimer, toastUndo = null;
+function toast(msg, undo = null) {
   const t = $("#toast");
-  t.textContent = msg;
+  $("#toastMsg").textContent = msg;
+  toastUndo = undo;
+  $("#toastAction").hidden = !undo;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+  toastTimer = setTimeout(() => { t.classList.remove("show"); toastUndo = null; }, undo ? 5000 : 1800);
 }
 
 /* ===================== Statut hors ligne ===================== */
@@ -251,6 +263,64 @@ function renderStatus() {
   } else {
     s.hidden = true;
   }
+}
+
+/* ===================== Liste (base + modifications locales) ===================== */
+
+function prep(p, user = false) {
+  const f = fold(p.n);
+  return { ...p, id: p.id || `${p.n}|${p.lat}|${p.lon}`, user, fold: f, canon: canon(f) };
+}
+
+function rebuild() {
+  plants = [
+    ...basePlants.map((p) => prep(p)).filter((p) => !state.removed.has(p.id)),
+    ...state.added.map((p) => prep(p, true)),
+  ].sort((a, b) => a.n.localeCompare(b.n, "fr", { sensitivity: "base", numeric: true }));
+  byId.clear();
+  plants.forEach((p) => byId.set(p.id, p));
+  state.recents = state.recents.filter((id) => byId.has(id));
+  $("#q").placeholder = `Rechercher parmi ${plants.length} centrales`;
+  renderFavCount();
+}
+
+function saveEdits() {
+  store.set("added", state.added);
+  store.set("removed", [...state.removed]);
+  store.set("recents", state.recents);
+  store.set("favs", [...state.favs]);
+}
+
+function addPlant(name, lat, lon) {
+  const p = { id: `u|${Date.now()}`, n: name, lat: +lat.toFixed(6), lon: +lon.toFixed(6) };
+  const r = regionOf(p.lat, p.lon);
+  if (r) p.r = r;
+  state.added.push(p);
+  saveEdits();
+  rebuild();
+  render();
+  return byId.get(p.id);
+}
+
+function removePlant(p) {
+  const snapshot = {
+    added: [...state.added], removed: new Set(state.removed),
+    favs: new Set(state.favs), recents: [...state.recents],
+  };
+  if (p.user) state.added = state.added.filter((x) => x.id !== p.id);
+  else state.removed.add(p.id);
+  state.favs.delete(p.id);
+  state.recents = state.recents.filter((id) => id !== p.id);
+  saveEdits();
+  rebuild();
+  render();
+  toast(`« ${p.n} » supprimée`, () => {
+    Object.assign(state, snapshot);
+    saveEdits();
+    rebuild();
+    render();
+    toast("Suppression annulée");
+  });
 }
 
 /* ===================== Événements ===================== */
@@ -306,6 +376,29 @@ function bind() {
     catch { toast(`${p.lat}, ${p.lon}`); }
   });
   $("#close").addEventListener("click", closeSheet);
+
+  const confirmDlg = $("#confirm");
+  $("#remove").addEventListener("click", () => {
+    $("#confirmTitle").textContent = `Supprimer « ${state.current.n} » ?`;
+    confirmDlg.showModal();
+  });
+  $("#confirmCancel").addEventListener("click", () => confirmDlg.close());
+  $("#confirmOk").addEventListener("click", () => {
+    const p = state.current;
+    confirmDlg.close();
+    closeSheet();
+    removePlant(p);
+  });
+  confirmDlg.addEventListener("click", (e) => { if (e.target === confirmDlg) confirmDlg.close(); });
+
+  $("#toastAction").addEventListener("click", () => {
+    const undo = toastUndo;
+    toastUndo = null;
+    $("#toast").classList.remove("show");
+    if (undo) undo();
+  });
+
+  $("#add").addEventListener("click", () => Editor.open());
   sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(); });
 
   const top = $(".top");
@@ -314,6 +407,222 @@ function bind() {
   window.addEventListener("offline", renderStatus);
 }
 
+/* ===================== Ajout d'une centrale ===================== */
+
+// Comprend « 45.10453, 1.95359 », « 45,10453 1,95359 », le format degrés-minutes-secondes
+// (45°06'16.3"N 1°57'12.9"E) et les liens Google Maps / Waze contenant des coordonnées.
+function parseCoords(text) {
+  const t = text.trim();
+  if (!t) return null;
+  const ok = (lat, lon) => (Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { lat, lon } : null);
+
+  let m = t.match(/[@=](-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);                  // lien
+  if (m) return ok(+m[1], +m[2]);
+  m = t.match(/^(-?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);          // 45.1, 1.9
+  if (m) return ok(+m[1], +m[2]);
+  m = t.match(/^(-?\d{1,2},\d+)\s*[;\s]\s*(-?\d{1,3},\d+)$/);                      // 45,1 1,9
+  if (m) return ok(+m[1].replace(",", "."), +m[2].replace(",", "."));
+  const dms = /(\d{1,3})°\s*(?:(\d{1,2})['′’]\s*)?(?:([\d.,]+)["″”]\s*)?([NSEOW])/gi;
+  const parts = [...t.matchAll(dms)];
+  if (parts.length === 2) {
+    const val = (p) => {
+      const v = +p[1] + (+p[2] || 0) / 60 + (+(p[3] || "0").replace(",", ".")) / 3600;
+      return /[SOW]/i.test(p[4]) ? -v : v;
+    };
+    const [a, b] = parts;
+    return /[NS]/i.test(a[4]) ? ok(val(a), val(b)) : ok(val(b), val(a));
+  }
+  return null;
+}
+
+const Editor = (() => {
+  const dlg = $("#editor");
+  const name = $("#fName"), search = $("#fSearch"), coords = $("#fCoords");
+  const results = $("#fResults"), save = $("#editorSave"), coordsMsg = $("#fCoordsMsg");
+  const mapMsg = $("#mapMsg"), mapHint = $("#mapHint");
+  let L = null, map = null, marker = null, layers = {}, point = null, loading = null;
+
+  const PIN = '<svg viewBox="0 0 34 44" aria-hidden="true"><path fill="currentColor" d="M17 1C8.2 1 1 7.9 1 16.4 1 27.6 13.4 37.6 15.8 39.4a2 2 0 0 0 2.4 0C20.6 37.6 33 27.6 33 16.4 33 7.9 25.8 1 17 1z"/><circle cx="17" cy="16" r="6" fill="#fff"/></svg>';
+
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (loading) return loading;
+    loading = new Promise((resolve, reject) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet"; css.href = "vendor/leaflet/leaflet.css";
+      document.head.appendChild(css);
+      const js = document.createElement("script");
+      js.src = "vendor/leaflet/leaflet.js";
+      js.onload = () => resolve(window.L);
+      js.onerror = () => { loading = null; reject(new Error("leaflet")); };
+      document.head.appendChild(js);
+    });
+    return loading;
+  }
+
+  function showMapMessage(text) {
+    mapMsg.textContent = text;
+    mapMsg.hidden = !text;
+    mapHint.hidden = !!text;
+  }
+
+  async function initMap() {
+    if (!navigator.onLine) {
+      showMapMessage("Pas de réseau : la carte et la recherche ne sont pas disponibles. Vous pouvez saisir les coordonnées GPS ci-dessous.");
+      return;
+    }
+    showMapMessage("");
+    try { L = await loadLeaflet(); }
+    catch { showMapMessage("La carte n'a pas pu être chargée. Vérifiez le réseau, ou saisissez les coordonnées GPS ci-dessous."); return; }
+
+    if (!map) {
+      map = L.map("map", { zoomControl: false, attributionControl: true });
+      layers.plan = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19, attribution: "© OpenStreetMap",
+      });
+      layers.sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19, attribution: "Esri, Maxar",
+      });
+      layers.plan.addTo(map);
+      map.on("click", (e) => setPoint(e.latlng.lat, e.latlng.lng, { pan: false }));
+    }
+    const start = point || state.pos;
+    if (start) map.setView([start.lat, start.lon], point ? 15 : 11);
+    else map.setView([46.6, 2.4], 5);
+    setTimeout(() => map.invalidateSize(), 50);
+    if (point) placeMarker();
+  }
+
+  function placeMarker() {
+    if (!map || !point) return;
+    if (!marker) {
+      marker = L.marker([point.lat, point.lon], {
+        draggable: true,
+        icon: L.divIcon({ className: "pin", html: PIN, iconSize: [34, 44], iconAnchor: [17, 42] }),
+      }).addTo(map);
+      marker.on("dragend", () => { const ll = marker.getLatLng(); setPoint(ll.lat, ll.lng, { pan: false }); });
+    } else {
+      marker.setLatLng([point.lat, point.lon]);
+    }
+  }
+
+  function setPoint(lat, lon, { pan = true, zoom = 15, fromInput = false } = {}) {
+    point = { lat, lon };
+    if (!fromInput) coords.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    coords.style.borderColor = "";
+    let near = null, nearKm = Infinity;
+    for (const p of plants) { const d = distanceKm(point, p); if (d < nearKm) { nearKm = d; near = p; } }
+    if (near && nearKm < 1) {
+      coordsMsg.className = "warn";
+      coordsMsg.textContent = `Attention : « ${near.n} » est déjà dans la liste, à ${formatKm(nearKm)} de ce point.`;
+    } else {
+      coordsMsg.className = "";
+      coordsMsg.textContent = state.pos
+        ? `À ${formatKm(distanceKm(state.pos, point))} de vous à vol d'oiseau.`
+        : "Position du repère.";
+    }
+    placeMarker();
+    if (map && pan) map.setView([lat, lon], Math.max(map.getZoom(), zoom));
+    validate();
+  }
+
+  function validate() {
+    save.disabled = !(name.value.trim() && point);
+  }
+
+  function showResults(html) {
+    results.innerHTML = html;
+    results.hidden = !html;
+  }
+
+  async function runSearch() {
+    const q = search.value.trim();
+    if (!q) return;
+    const c = parseCoords(q);
+    if (c) { showResults(""); search.blur(); setPoint(c.lat, c.lon); return; }
+    if (!navigator.onLine) { showResults('<li class="info">La recherche par nom nécessite du réseau.</li>'); return; }
+    showResults('<li class="info">Recherche…</li>');
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=fr&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(res.status);
+      const list = await res.json();
+      if (!list.length) { showResults(`<li class="info">Aucun lieu trouvé pour « ${escapeHtml(q)} ». Essayez un nom de commune, ou placez le repère sur la carte.</li>`); return; }
+      showResults(list.map((r, i) => {
+        const title = r.name || r.display_name.split(",")[0];
+        const rest = r.display_name.split(",").slice(1, 4).join(",").trim();
+        return `<li><button type="button" data-i="${i}"><b>${escapeHtml(title)}</b><span>${escapeHtml(rest)}</span></button></li>`;
+      }).join(""));
+      results.onclick = (e) => {
+        const b = e.target.closest("button[data-i]");
+        if (!b) return;
+        const r = list[+b.dataset.i];
+        showResults("");
+        search.blur();
+        if (!name.value.trim()) name.value = (r.name || r.display_name.split(",")[0]).toUpperCase();
+        setPoint(+r.lat, +r.lon);
+      };
+    } catch {
+      showResults('<li class="info">La recherche n\'a pas abouti. Vérifiez le réseau, puis réessayez.</li>');
+    }
+  }
+
+  function open() {
+    $("#editorForm").reset();
+    point = null;
+    if (marker) { marker.remove(); marker = null; }
+    showResults("");
+    coords.style.borderColor = "";
+    coordsMsg.className = "";
+    coordsMsg.textContent = "Saisissez-les directement si vous les connaissez.";
+    $("#fSearchGo").disabled = false;
+    validate();
+    dlg.showModal();
+    initMap();
+    setTimeout(() => name.focus(), 300);
+  }
+
+  function close() { if (dlg.open) dlg.close(); }
+
+  // Événements
+  name.addEventListener("input", validate);
+  search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); runSearch(); } });
+  search.addEventListener("input", () => { if (!search.value) showResults(""); });
+  $("#fSearchGo").addEventListener("click", runSearch);
+  coords.addEventListener("input", () => {
+    const c = parseCoords(coords.value);
+    if (c) { setPoint(c.lat, c.lon, { fromInput: true }); return; }
+    point = null;
+    if (marker) { marker.remove(); marker = null; }
+    validate();
+    if (coords.value.trim()) {
+      coordsMsg.className = "error";
+      coordsMsg.textContent = "Format attendu : 45.10453, 1.95359";
+    } else {
+      coordsMsg.className = "";
+      coordsMsg.textContent = "Saisissez-les directement si vous les connaissez.";
+    }
+  });
+  dlg.querySelectorAll(".map-layers button").forEach((b) => b.addEventListener("click", () => {
+    if (!map) return;
+    const key = b.dataset.layer;
+    Object.entries(layers).forEach(([k, layer]) => (k === key ? layer.addTo(map) : layer.remove()));
+    dlg.querySelectorAll(".map-layers button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  }));
+  $("#editorCancel").addEventListener("click", close);
+  $("#editorForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const n = name.value.trim();
+    if (!n || !point) return;
+    addPlant(n, point.lat, point.lon);
+    close();
+    toast(`« ${n} » ajoutée`);
+  });
+  window.addEventListener("online", () => { if (dlg.open && !map) initMap(); });
+
+  return { open };
+})();
+
 /* ===================== Démarrage ===================== */
 
 async function init() {
@@ -321,15 +630,8 @@ async function init() {
   renderFavCount();
   try {
     const res = await fetch("data/centrales.json");
-    const raw = await res.json();
-    plants = raw.map((p) => {
-      const f = fold(p.n);
-      return { ...p, id: `${p.n}|${p.lat}|${p.lon}`, fold: f, canon: canon(f) };
-    }).sort((a, b) => a.n.localeCompare(b.n, "fr", { sensitivity: "base", numeric: true }));
-    plants.forEach((p) => byId.set(p.id, p));
-    // Nettoie les favoris/récents qui n'existent plus dans la liste
-    state.recents = state.recents.filter((id) => byId.has(id));
-    $("#q").placeholder = `Rechercher parmi ${plants.length} centrales`;
+    basePlants = await res.json();
+    rebuild();
   } catch {
     $("#empty").hidden = false;
     $("#empty").textContent = "La liste des centrales n'a pas pu être chargée. Ouvrez l'appli une fois avec du réseau pour l'enregistrer sur le téléphone.";

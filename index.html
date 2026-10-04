@@ -24,7 +24,12 @@
   <header class="top">
     <div class="top-row">
       <h1>Centrales</h1>
-      <span class="status" id="status" hidden></span>
+      <div class="top-actions">
+        <span class="status" id="status" hidden></span>
+        <button type="button" class="add" id="add" aria-label="Ajouter une centrale">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
     </div>
 
     <label class="search">
@@ -53,7 +58,7 @@
       <div class="sheet-head">
         <div>
           <h2 id="sheetName"></h2>
-          <p class="sheet-meta" id="sheetMeta"></p>
+          <p class="sheet-meta"><span id="sheetMeta"></span> <button type="button" class="copy" id="copy">Copier</button></p>
         </div>
         <button type="button" class="star" id="sheetStar" aria-pressed="false" aria-label="Ajouter aux favoris">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>
@@ -71,13 +76,66 @@
       </div>
 
       <div class="sheet-foot">
-        <button type="button" class="link" id="copy">Copier les coordonnées</button>
+        <button type="button" class="link danger" id="remove">Supprimer</button>
         <button type="button" class="link" id="close">Fermer</button>
       </div>
     </div>
   </dialog>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <!-- Confirmation de suppression -->
+  <dialog class="confirm" id="confirm" aria-labelledby="confirmTitle">
+    <h2 id="confirmTitle"></h2>
+    <p>Elle disparaîtra de la liste sur ce téléphone.</p>
+    <div class="confirm-actions">
+      <button type="button" class="btn-plain" id="confirmCancel">Annuler</button>
+      <button type="button" class="btn-danger" id="confirmOk">Supprimer</button>
+    </div>
+  </dialog>
+
+  <!-- Ajout d'une centrale -->
+  <dialog class="editor" id="editor" aria-labelledby="editorTitle">
+    <form class="editor-inner" id="editorForm" novalidate>
+      <div class="editor-bar">
+        <button type="button" class="link" id="editorCancel">Annuler</button>
+        <h2 id="editorTitle">Nouvelle centrale</h2>
+        <button type="submit" class="link strong" id="editorSave" disabled>Ajouter</button>
+      </div>
+
+      <div class="editor-fields">
+        <label class="field">
+          <span>Nom</span>
+          <input type="text" id="fName" autocomplete="off" autocapitalize="characters" placeholder="Ex. GRAND MAISON" required>
+        </label>
+
+        <div class="field">
+          <span>Trouver sur la carte</span>
+          <div class="field-search">
+            <input type="search" id="fSearch" autocomplete="off" enterkeyhint="search" placeholder="Lieu ou coordonnées GPS">
+            <button type="button" id="fSearchGo" class="btn-plain small">Chercher</button>
+          </div>
+          <ul class="results" id="fResults" hidden></ul>
+        </div>
+      </div>
+
+      <div class="map-wrap">
+        <div id="map" class="map"></div>
+        <div class="map-layers" role="group" aria-label="Fond de carte">
+          <button type="button" data-layer="plan" aria-pressed="true">Plan</button>
+          <button type="button" data-layer="sat" aria-pressed="false">Satellite</button>
+        </div>
+        <p class="map-msg" id="mapMsg" hidden></p>
+        <p class="map-hint" id="mapHint">Touchez la carte ou déplacez le repère</p>
+      </div>
+
+      <label class="field editor-coords">
+        <span>Coordonnées GPS</span>
+        <input type="text" id="fCoords" inputmode="text" autocomplete="off" placeholder="45.10453, 1.95359">
+        <small id="fCoordsMsg">Saisissez-les directement si vous les connaissez.</small>
+      </label>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAction" hidden>Annuler</button></div>
 
   <script src="app.js"></script>
 </body>

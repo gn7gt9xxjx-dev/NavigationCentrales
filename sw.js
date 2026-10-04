@@ -1,7 +1,7 @@
 // Service worker : met toute l'appli en cache pour qu'elle s'ouvre sans réseau.
 // ➜ Changez VERSION à chaque modification (liste des centrales, design…)
 //   pour que les téléphones téléchargent la nouvelle version.
-const VERSION = "2026-10-04.1";
+const VERSION = "2026-10-04.2";
 const CACHE = `centrales-${VERSION}`;
 
 const FILES = [
@@ -18,6 +18,8 @@ const FILES = [
   "fonts/barlow-semi-condensed-latin-500-normal.woff2",
   "fonts/barlow-semi-condensed-latin-600-normal.woff2",
   "fonts/barlow-semi-condensed-latin-700-normal.woff2",
+  "vendor/leaflet/leaflet.js",
+  "vendor/leaflet/leaflet.css",
 ];
 
 self.addEventListener("install", (event) => {
