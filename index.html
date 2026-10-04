@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Centrales</title>
+  <meta name="description" content="Lancer la navigation vers une centrale, même sans réseau.">
+
+  <!-- Installation sur l'écran d'accueil (iOS) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Centrales">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#EDF0F3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0E1620" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="preload" href="fonts/barlow-semi-condensed-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <h1>Centrales</h1>
+      <span class="status" id="status" hidden></span>
+    </div>
+
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input type="search" id="q" placeholder="Nom de la centrale" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Rechercher une centrale">
+      <button type="button" class="clear" id="clear" aria-label="Effacer" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>
+      </button>
+    </label>
+
+    <div class="modes" role="tablist" aria-label="Affichage">
+      <button role="tab" data-mode="az" aria-selected="true">A–Z</button>
+      <button role="tab" data-mode="near" aria-selected="false">Autour de moi</button>
+      <button role="tab" data-mode="fav" aria-selected="false">Favoris <span id="favCount"></span></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <p class="note" id="note" hidden></p>
+    <ul class="list" id="list"></ul>
+    <p class="empty" id="empty" hidden></p>
+  </main>
+
+  <dialog class="sheet" id="sheet" aria-labelledby="sheetName">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <div>
+          <h2 id="sheetName"></h2>
+          <p class="sheet-meta" id="sheetMeta"></p>
+        </div>
+        <button type="button" class="star" id="sheetStar" aria-pressed="false" aria-label="Ajouter aux favoris">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>
+        </button>
+      </div>
+
+      <p class="offline-hint" id="offlineHint" hidden>
+        Pas de réseau : Waze ne pourra pas calculer l'itinéraire. Plans et Google Maps fonctionnent si la zone a été téléchargée.
+      </p>
+
+      <div class="apps">
+        <a class="app app-waze" id="goWaze">Waze</a>
+        <a class="app app-gmaps" id="goGmaps">Google Maps</a>
+        <a class="app app-plans" id="goPlans">Plans</a>
+      </div>
+
+      <div class="sheet-foot">
+        <button type="button" class="link" id="copy">Copier les coordonnées</button>
+        <button type="button" class="link" id="close">Fermer</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
