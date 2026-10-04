@@ -1,5 +1,8 @@
 # Navigation Centrales
 
+**📲 Ouvrir l'appli : https://gn7gt9xxjx-dev.github.io/NavigationCentrales/**  
+(dans Safari sur iPhone ou Chrome sur Android, puis « Sur l'écran d'accueil »)
+
 Webapp iPhone (PWA) pour lancer Waze, Google Maps ou Plans vers l'une des 584 centrales, **même sans réseau**.
 
 - S'installe sur l'écran d'accueil avec sa propre icône (pas besoin de compte développeur Apple).
