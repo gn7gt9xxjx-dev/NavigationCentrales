@@ -83,9 +83,15 @@ const Sync = (() => {
       const json = await res.json();
       return { list: validate(JSON.parse(fromBase64(json.content))), sha: json.sha };
     }
-    const res = await request(`${RAW}?t=${Date.now()}`, { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new SyncError("http", `Erreur ${res.status} en lisant la liste.`);
-    return { list: validate(await res.json()), sha: null };
+    // 1. fichier brut du dépôt (le plus à jour, si le dépôt est public)
+    // 2. sinon, le fichier publié avec le site (fonctionne aussi avec un dépôt privé)
+    for (const url of [`${RAW}?t=${Date.now()}`, `${FILE}?fresh=${Date.now()}`]) {
+      try {
+        const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
+        if (res.ok) return { list: validate(await res.json()), sha: null };
+      } catch { /* source suivante */ }
+    }
+    throw new SyncError("http", "La liste partagée est injoignable pour le moment.");
   }
 
   function commitMessage(ops, author) {
