@@ -582,5 +582,14 @@
 {"n": "PORT EST", "lat": -20.928668, "lon": 55.329069, "r": "La Réunion"},
 {"n": "BOURBIER EDF", "lat": -21.03087, "lon": 55.692752, "r": "La Réunion"},
 {"n": "CPT MONTEREAU", "lat": 48.380967, "lon": 2.850559},
-{"n": "DTG", "lat": 45.210695, "lon": 5.698703}
+{"n": "DTG", "lat": 45.210695, "lon": 5.698703},
+{"n": "CPT ARRIGHI", "lat": 48.791547, "lon": 2.417139},
+{"n": "CPT BLENOD", "lat": 48.866546, "lon": 6.07824},
+{"n": "CPT BOUCHAIN", "lat": 50.296302, "lon": 3.315191},
+{"n": "CPT BRENNILIS", "lat": 48.353318, "lon": -3.871479},
+{"n": "CPT CORDEMAIS", "lat": 47.275129, "lon": -1.874592},
+{"n": "CPT DIRINON", "lat": 48.388804, "lon": -4.265463},
+{"n": "CPT GENNEVILLIERS", "lat": 48.937185, "lon": 2.261755},
+{"n": "CPT MARTIGUES-PONTEAU", "lat": 43.358402, "lon": 5.021321},
+{"n": "CPT VAIRES SUR MARNE", "lat": 48.871786, "lon": 2.652626}
 ]
