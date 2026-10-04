@@ -7,10 +7,19 @@ Webapp iPhone (PWA) pour lancer Waze, Google Maps ou Plans vers l'une des 584 ce
 - Recherche sans accents, « St » = « Saint ».
 - « Autour de moi » classe les centrales par distance (le GPS fonctionne sans réseau).
 - Favoris, derniers lancements, appli de navigation préférée mémorisés sur le téléphone.
-- **Ajouter une centrale** (bouton +) : recherche d'un lieu sur la carte (plan ou satellite), repère à déplacer, ou saisie directe des coordonnées GPS (décimales, degrés-minutes-secondes ou lien Google Maps). Alerte si une centrale existe déjà à moins d'1 km.
-- **Supprimer une centrale** : bouton Supprimer dans la fiche, avec confirmation, puis « Annuler » pendant quelques secondes.
+- **Liste partagée** : la liste vit dans ce dépôt (`data/centrales.json`). Chaque téléphone récupère la dernière version dès qu'il a du réseau, et garde la précédente pour fonctionner hors ligne.
+- **Ajouter / supprimer une centrale** (avec un code d'édition) : carte plan ou satellite, recherche de lieu, saisie directe des coordonnées GPS (décimales, degrés-minutes-secondes ou lien Google Maps), alerte si une centrale existe déjà à moins d'1 km, suppression avec confirmation puis « Annuler ». Chaque modification devient un commit dans ce dépôt (historique et retour arrière possibles). Hors réseau, les modifications attendent et partent au retour du réseau.
 
-Les ajouts et suppressions sont enregistrés **sur le téléphone** (pas dans ce dépôt). Pour qu'ils soient partagés avec tout le monde, il faut les reporter dans `data/centrales.json`.
+## Code d'édition
+
+Sans code, l'appli est en lecture seule (pas de bouton + ni Supprimer). Le code d'édition est un jeton GitHub limité à ce dépôt :
+
+1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
+2. Nom : « Centrales édition » ; Expiration : au choix ; Repository access : **Only select repositories** → `NavigationCentrales`.
+3. Permissions → Repository permissions → **Contents : Read and write**. Rien d'autre.
+4. Générer, copier le code (commence par `github_pat_`), puis dans l'appli : Réglages → Modifier la liste → coller → Activer.
+
+Donnez ce code uniquement aux personnes qui doivent pouvoir modifier la liste. Pour retirer l'accès à tout le monde : supprimez le jeton sur GitHub et créez-en un nouveau.
 
 ## Installer sur l'iPhone
 
@@ -26,10 +35,10 @@ Les ajouts et suppressions sont enregistrés **sur le téléphone** (pas dans ce
 | Google Maps | Oui, si la zone est téléchargée (Google Maps → photo de profil → Plans hors connexion) |
 | Waze | S'ouvre sur la destination, mais ne calcule pas l'itinéraire sans réseau |
 
-## Modifier la liste des centrales
+## Modifier la liste à la main
 
-La liste est dans `data/centrales.json` (une ligne par centrale : nom `n`, latitude `lat`, longitude `lon`, région facultative `r`).
-Après chaque modification, **changer `VERSION` dans `sw.js`** pour que les téléphones récupèrent la nouvelle liste au lancement suivant (avec réseau).
+La liste est dans `data/centrales.json` (une ligne par centrale : nom `n`, latitude `lat`, longitude `lon`, région facultative `r`). Les téléphones récupèrent les changements automatiquement.
+Pour une modification du code ou du design, **changer `VERSION` dans `sw.js`** pour que les téléphones téléchargent la nouvelle version.
 
 `tools/extract.py` régénère la liste à partir de l'ancienne page (`source/navigation-centrales-original.html`).
 
@@ -39,6 +48,7 @@ Après chaque modification, **changer `VERSION` dans `sw.js`** pour que les tél
 index.html            page
 styles.css            design (clair / sombre automatique)
 app.js                logique
+sync.js               synchronisation avec le dépôt
 sw.js                 cache hors ligne
 manifest.webmanifest  installation
 data/centrales.json   les 584 centrales

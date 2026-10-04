@@ -25,8 +25,11 @@
     <div class="top-row">
       <h1>Centrales</h1>
       <div class="top-actions">
-        <span class="status" id="status" hidden></span>
-        <button type="button" class="add" id="add" aria-label="Ajouter une centrale">
+        <button type="button" class="status" id="status" hidden></button>
+        <button type="button" class="round ghost" id="openSettings" aria-label="Réglages">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+        <button type="button" class="round add" id="add" aria-label="Ajouter une centrale">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         </button>
       </div>
@@ -137,6 +140,44 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAction" hidden>Annuler</button></div>
 
+  <!-- Réglages : liste partagée et code d'édition -->
+  <dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
+    <div class="sheet-body settings">
+      <div class="sheet-head">
+        <h2 id="settingsTitle">Réglages</h2>
+        <button type="button" class="link" id="setClose">Fermer</button>
+      </div>
+
+      <section>
+        <h3>Liste partagée</h3>
+        <p id="setSyncInfo"></p>
+        <p class="set-error" id="setSyncError" hidden></p>
+        <button type="button" class="btn-plain wide" id="setSyncNow">Mettre à jour maintenant</button>
+      </section>
+
+      <section id="setEditOff">
+        <h3>Modifier la liste</h3>
+        <p>Pour ajouter ou supprimer des centrales pour tout le monde, saisissez le code d'édition.</p>
+        <div class="field-search">
+          <input type="password" id="setToken" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Code d'édition" aria-label="Code d'édition">
+          <button type="button" class="btn-plain small" id="setTokenGo">Activer</button>
+        </div>
+        <small id="setTokenMsg"></small>
+      </section>
+
+      <section id="setEditOn" hidden>
+        <h3>Modifier la liste</h3>
+        <p>L'édition est activée sur ce téléphone. Vos ajouts et suppressions sont envoyés à tout le monde.</p>
+        <label class="field">
+          <span>Votre prénom (apparaît dans l'historique des modifications)</span>
+          <input type="text" id="setAuthor" autocomplete="given-name" placeholder="Facultatif">
+        </label>
+        <button type="button" class="link danger" id="setEditDisable">Désactiver l'édition sur ce téléphone</button>
+      </section>
+    </div>
+  </dialog>
+
+  <script src="sync.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

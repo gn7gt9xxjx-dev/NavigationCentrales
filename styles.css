@@ -207,6 +207,7 @@ mark { background: none; color: var(--sign); }
 .app.preferred { order: -1; }
 
 .sheet-foot { display: flex; justify-content: space-between; margin-top: 10px; }
+body:not(.can-edit) .sheet-foot { justify-content: flex-end; }
 .link { color: var(--sign); font-weight: 600; font-size: 1.0625rem; padding: 10px 4px; }
 
 /* ---------- Toast ---------- */
@@ -228,14 +229,39 @@ mark { background: none; color: var(--sign); }
 @media (prefers-color-scheme: dark) { :root { --danger: #FF6B6B; } }
 
 .top-actions { display: flex; align-items: center; gap: 12px; }
-.add {
+.round {
   width: 40px; height: 40px; border-radius: 50%;
   display: grid; place-items: center; flex: none;
-  background: var(--sign); color: var(--sign-ink);
-  align-self: center;
 }
-.add svg { width: 22px; height: 22px; stroke-width: 2.6; }
-.add:active { filter: brightness(.9); }
+.round svg { width: 22px; height: 22px; }
+.round:active { filter: brightness(.9); }
+.add { background: var(--sign); color: var(--sign-ink); }
+.add svg { stroke-width: 2.6; }
+.ghost { color: var(--ink); background: color-mix(in srgb, var(--line) 80%, transparent); }
+/* Lecture seule : pas d'ajout ni de suppression sans code d'édition */
+body:not(.can-edit) #add, body:not(.can-edit) #remove { display: none; }
+.status { padding: 6px 2px; white-space: nowrap; }
+.status.warn { color: var(--danger); }
+.tag.pending { color: var(--star); }
+@media (prefers-color-scheme: dark) { .tag.pending { color: var(--star); } }
+.top-actions { gap: 8px; }
+
+.settings section { margin-top: 20px; }
+.settings h3 { font-size: 1.125rem; font-weight: 700; }
+.settings p { color: var(--muted); font-size: 1rem; line-height: 1.4; margin: 4px 0 10px; }
+.settings .set-error { color: var(--danger); }
+.settings small { display: block; margin-top: 6px; color: var(--muted); font-size: .9375rem; }
+.settings small.error { color: var(--danger); }
+.settings .field { margin-bottom: 8px; }
+.settings .field-search input, .settings .field input {
+  height: 46px; padding: 0 14px; width: 100%; min-width: 0; flex: 1;
+  border: 2px solid var(--line); border-radius: 12px;
+  background: var(--bg); font-size: 1.0625rem; outline: 0;
+}
+.settings input:focus { border-color: var(--sign); }
+.btn-plain.wide { width: 100%; }
+.btn-plain:disabled { opacity: .55; }
+.settings .sheet-head { align-items: center; }
 .top-row { align-items: center; }
 
 .link.danger { color: var(--danger); }

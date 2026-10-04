@@ -72,8 +72,8 @@ function regionOf(lat, lon) {
 
 /* ===================== État ===================== */
 
-let basePlants = [];   // liste livrée avec l'appli (data/centrales.json)
-let plants = [];       // liste affichée = base − supprimées + ajoutées
+let basePlants = [];   // dernière liste partagée connue
+let plants = [];       // liste affichée = liste partagée + modifications pas encore envoyées
 const state = {
   mode: "az",
   query: "",
@@ -83,8 +83,12 @@ const state = {
   favs: new Set(store.get("favs", [])),
   recents: store.get("recents", []),
   preferredApp: store.get("preferredApp", ""),
-  added: store.get("added", []),          // centrales ajoutées sur ce téléphone
-  removed: new Set(store.get("removed", [])), // identifiants supprimés
+  pending: store.get("pending", []),   // modifications en attente d'envoi
+  token: store.get("token", ""),       // code d'édition (vide = lecture seule)
+  author: store.get("author", ""),
+  sync: "idle",                        // idle | busy | ok | error | auth
+  syncError: "",
+  lastSync: store.get("lastSync", 0),
   current: null,
 };
 
@@ -120,7 +124,7 @@ function rowHtml(p, tokens) {
     meta = `<span>${formatCoord(p.lat)}, ${formatCoord(p.lon)}</span>`;
   }
   if (p.r) meta += `<span class="tag">${p.r}</span>`;
-  if (p.user) meta += `<span class="tag">Ajoutée</span>`;
+  if (p.pending) meta += `<span class="tag pending">En attente d'envoi</span>`;
   return `<li><button class="row" data-id="${p.id}">
     <span class="row-main"><span class="row-name">${highlight(p, tokens)}</span><span class="row-meta">${meta}</span></span>
     ${state.favs.has(p.id) ? ICON_STAR : ""}${ICON_CHEV}
@@ -256,27 +260,34 @@ function toast(msg, undo = null) {
 
 function renderStatus() {
   const s = $("#status");
-  if (!navigator.onLine) {
-    s.hidden = false; s.className = "status"; s.textContent = "Sans réseau";
-  } else if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    s.hidden = false; s.className = "status ok"; s.textContent = "Prête hors ligne";
-  } else {
-    s.hidden = true;
-  }
+  const n = state.pending.length;
+  let cls = "status", text;
+  if (!navigator.onLine) text = n ? `${n} en attente` : "Hors ligne";
+  else if (state.sync === "busy") text = "Synchro…";
+  else if (state.sync === "auth") { cls += " warn"; text = "Code refusé"; }
+  else if (state.sync === "error") { cls += " warn"; text = n ? `${n} en attente` : "Non vérifiée"; }
+  else if (n) text = `${n} en attente`;
+  else { cls += " ok"; text = "À jour"; }
+  s.className = cls;
+  s.textContent = text;
+  s.hidden = false;
+  document.body.classList.toggle("can-edit", !!state.token);
+  if ($("#settings").open) renderSettings();
 }
 
 /* ===================== Liste (base + modifications locales) ===================== */
 
-function prep(p, user = false) {
+function prep(p, pending = false) {
   const f = fold(p.n);
-  return { ...p, id: p.id || `${p.n}|${p.lat}|${p.lon}`, user, fold: f, canon: canon(f) };
+  return { ...p, id: Sync.idOf(p), pending, fold: f, canon: canon(f) };
 }
+const rawOf = (p) => { const o = { n: p.n, lat: p.lat, lon: p.lon }; if (p.r) o.r = p.r; return o; };
 
 function rebuild() {
-  plants = [
-    ...basePlants.map((p) => prep(p)).filter((p) => !state.removed.has(p.id)),
-    ...state.added.map((p) => prep(p, true)),
-  ].sort((a, b) => a.n.localeCompare(b.n, "fr", { sensitivity: "base", numeric: true }));
+  const pendingIds = new Set(state.pending.filter((o) => o.op === "add").map((o) => Sync.idOf(o.item)));
+  plants = Sync.applyOps(basePlants, state.pending)
+    .map((p) => prep(p, pendingIds.has(Sync.idOf(p))))
+    .sort((a, b) => a.n.localeCompare(b.n, "fr", { sensitivity: "base", numeric: true }));
   byId.clear();
   plants.forEach((p) => byId.set(p.id, p));
   state.recents = state.recents.filter((id) => byId.has(id));
@@ -284,43 +295,150 @@ function rebuild() {
   renderFavCount();
 }
 
-function saveEdits() {
-  store.set("added", state.added);
-  store.set("removed", [...state.removed]);
+function saveLocal() {
+  store.set("pending", state.pending);
   store.set("recents", state.recents);
   store.set("favs", [...state.favs]);
 }
 
-function addPlant(name, lat, lon) {
-  const p = { id: `u|${Date.now()}`, n: name, lat: +lat.toFixed(6), lon: +lon.toFixed(6) };
-  const r = regionOf(p.lat, p.lon);
-  if (r) p.r = r;
-  state.added.push(p);
-  saveEdits();
+function changed() {
+  saveLocal();
   rebuild();
   render();
-  return byId.get(p.id);
+  renderStatus();
+  scheduleSync();
+}
+
+function addPlant(name, lat, lon) {
+  const item = { n: name, lat: +lat.toFixed(6), lon: +lon.toFixed(6) };
+  const r = regionOf(item.lat, item.lon);
+  if (r) item.r = r;
+  state.pending.push({ op: "add", item });
+  changed();
 }
 
 function removePlant(p) {
-  const snapshot = {
-    added: [...state.added], removed: new Set(state.removed),
-    favs: new Set(state.favs), recents: [...state.recents],
-  };
-  if (p.user) state.added = state.added.filter((x) => x.id !== p.id);
-  else state.removed.add(p.id);
-  state.favs.delete(p.id);
-  state.recents = state.recents.filter((id) => id !== p.id);
-  saveEdits();
-  rebuild();
-  render();
+  const id = p.id, item = rawOf(p);
+  const wasFav = state.favs.has(id), recents = [...state.recents];
+  const addIdx = state.pending.findIndex((o) => o.op === "add" && Sync.idOf(o.item) === id);
+  if (addIdx >= 0) state.pending.splice(addIdx, 1);  // ajout pas encore envoyé : on l'annule simplement
+  else state.pending.push({ op: "remove", id });
+  state.favs.delete(id);
+  state.recents = state.recents.filter((x) => x !== id);
+  changed();
   toast(`« ${p.n} » supprimée`, () => {
-    Object.assign(state, snapshot);
-    saveEdits();
-    rebuild();
-    render();
+    const delIdx = state.pending.findIndex((o) => o.op === "remove" && o.id === id);
+    if (delIdx >= 0) state.pending.splice(delIdx, 1);   // pas encore envoyée
+    else state.pending.push({ op: "add", item });       // déjà envoyée : on la remet
+    if (wasFav) state.favs.add(id);
+    state.recents = recents;
+    changed();
     toast("Suppression annulée");
   });
+}
+
+/* ===================== Synchronisation ===================== */
+
+let syncTimer = null, syncRunning = false, syncAgain = false;
+
+function scheduleSync(delay = 1500) {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, delay);
+}
+
+async function syncNow() {
+  clearTimeout(syncTimer);
+  if (!navigator.onLine) { renderStatus(); return; }
+  if (syncRunning) { syncAgain = true; return; }
+  syncRunning = true;
+  state.sync = "busy";
+  renderStatus();
+  try {
+    const ops = state.pending.slice();
+    let list;
+    if (ops.length && state.token) list = await Sync.push(ops, state.token, state.author);
+    else list = (await Sync.fetchList(state.token)).list;
+    // Retire les modifications envoyées (d'autres ont pu s'ajouter entre-temps)
+    if (ops.length && state.token) state.pending = state.pending.filter((o) => !ops.includes(o));
+    basePlants = list;
+    store.set("list", list);
+    state.lastSync = Date.now();
+    store.set("lastSync", state.lastSync);
+    state.sync = "ok";
+    state.syncError = "";
+    saveLocal();
+    rebuild();
+    render();
+  } catch (e) {
+    state.sync = e.code === "auth" ? "auth" : "error";
+    state.syncError = e.message;
+  } finally {
+    syncRunning = false;
+    renderStatus();
+    if (syncAgain) { syncAgain = false; scheduleSync(300); }
+  }
+}
+
+/* ===================== Réglages ===================== */
+
+const settingsDlg = $("#settings");
+
+function timeAgo(ts) {
+  if (!ts) return "jamais";
+  const min = Math.round((Date.now() - ts) / 60000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+}
+
+function renderSettings() {
+  const n = state.pending.length;
+  let line = `${plants.length} centrales. Mise à jour ${timeAgo(state.lastSync)}.`;
+  if (n) line += ` ${n} modification${n > 1 ? "s" : ""} en attente d'envoi.`;
+  $("#setSyncInfo").textContent = line;
+  const err = $("#setSyncError");
+  err.hidden = !state.syncError;
+  err.textContent = state.syncError;
+  $("#setSyncNow").disabled = state.sync === "busy" || !navigator.onLine;
+  $("#setSyncNow").textContent = !navigator.onLine ? "Pas de réseau" : state.sync === "busy" ? "Synchronisation…" : "Mettre à jour maintenant";
+  $("#setEditOff").hidden = !!state.token;
+  $("#setEditOn").hidden = !state.token;
+  if (n && !state.token) {
+    err.hidden = false;
+    err.textContent = "Des modifications attendent un code d'édition pour être envoyées.";
+  }
+}
+
+function openSettings() {
+  $("#setToken").value = "";
+  $("#setTokenMsg").textContent = "";
+  $("#setAuthor").value = state.author;
+  renderSettings();
+  settingsDlg.showModal();
+}
+
+async function activateToken() {
+  const token = $("#setToken").value.trim();
+  const msg = $("#setTokenMsg");
+  if (!token) { msg.className = "error"; msg.textContent = "Collez le code d'édition."; return; }
+  if (!navigator.onLine) { msg.className = "error"; msg.textContent = "Il faut du réseau pour vérifier le code."; return; }
+  msg.className = ""; msg.textContent = "Vérification…";
+  try {
+    await Sync.checkToken(token);
+  } catch (e) {
+    msg.className = "error";
+    msg.textContent = e.code === "auth" ? "Ce code n'est pas valide pour cette liste." : e.message;
+    return;
+  }
+  state.token = token;
+  store.set("token", token);
+  state.sync = "idle";
+  renderStatus();
+  renderSettings();
+  toast("Édition activée");
+  syncNow();
 }
 
 /* ===================== Événements ===================== */
@@ -399,11 +517,31 @@ function bind() {
   });
 
   $("#add").addEventListener("click", () => Editor.open());
+
+  $("#status").addEventListener("click", openSettings);
+  $("#openSettings").addEventListener("click", openSettings);
+  $("#setClose").addEventListener("click", () => settingsDlg.close());
+  settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+  $("#setSyncNow").addEventListener("click", syncNow);
+  $("#setTokenGo").addEventListener("click", activateToken);
+  $("#setToken").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); activateToken(); } });
+  $("#setAuthor").addEventListener("change", () => { state.author = $("#setAuthor").value.trim(); store.set("author", state.author); });
+  $("#setEditDisable").addEventListener("click", () => {
+    state.token = "";
+    store.set("token", "");
+    if (state.sync === "auth") state.sync = "idle";
+    renderStatus();
+    renderSettings();
+    toast("Édition désactivée sur ce téléphone");
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && Date.now() - state.lastSync > 60000) syncNow();
+  });
   sheet.addEventListener("click", (e) => { if (e.target === sheet) closeSheet(); });
 
   const top = $(".top");
   window.addEventListener("scroll", () => top.classList.toggle("scrolled", window.scrollY > 4), { passive: true });
-  window.addEventListener("online", renderStatus);
+  window.addEventListener("online", () => { renderStatus(); syncNow(); });
   window.addEventListener("offline", renderStatus);
 }
 
@@ -629,8 +767,9 @@ async function init() {
   bind();
   renderFavCount();
   try {
-    const res = await fetch("data/centrales.json");
-    basePlants = await res.json();
+    const stored = store.get("list", null);
+    if (Array.isArray(stored) && stored.length) basePlants = stored;
+    else basePlants = await (await fetch("data/centrales.json")).json();
     rebuild();
   } catch {
     $("#empty").hidden = false;
@@ -638,6 +777,8 @@ async function init() {
     return;
   }
   render();
+  renderStatus();
+  syncNow();
 
   if (isApple && !isStandalone) {
     const note = $("#note");
@@ -647,8 +788,6 @@ async function init() {
 }
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").then(() => navigator.serviceWorker.ready).then(renderStatus).catch(() => {});
-  navigator.serviceWorker.addEventListener("controllerchange", renderStatus);
+  navigator.serviceWorker.register("sw.js").catch(() => {});
 }
-renderStatus();
 init();
