@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.5.2
+- Le code d'édition se conserve mieux : l'appli demande un stockage persistant au téléphone (il n'est plus vidé quand la place manque), et le champ du code est reconnu comme un mot de passe, pour l'enregistrer dans le trousseau et le remplir en un geste s'il faut le ressaisir.
+
 ## 1.5.1
 - Le nom de l'appli installée devient « Navigation Centrales » (manifeste et titre iOS).
 

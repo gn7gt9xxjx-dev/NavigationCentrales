@@ -524,8 +524,7 @@ function bind() {
   $("#setClose").addEventListener("click", () => settingsDlg.close());
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
   $("#setSyncNow").addEventListener("click", syncNow);
-  $("#setTokenGo").addEventListener("click", activateToken);
-  $("#setToken").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); activateToken(); } });
+  $("#setTokenForm").addEventListener("submit", (e) => { e.preventDefault(); activateToken(); });
   $("#setAuthor").addEventListener("change", () => { state.author = $("#setAuthor").value.trim(); store.set("author", state.author); });
   $("#setEditDisable").addEventListener("click", () => {
     state.token = "";
@@ -765,7 +764,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.5.1";
+const APP_VERSION = "1.5.2";
 
 async function renderVersion() {
   let cache = "";
@@ -779,6 +778,9 @@ async function renderVersion() {
 /* ===================== Démarrage ===================== */
 
 async function init() {
+  // Demande un stockage « persistant » : sans cela, le navigateur peut vider le localStorage
+  // (code d'édition, favoris, liste) quand le téléphone manque de place.
+  try { navigator.storage?.persist?.().catch(() => {}); } catch { /* non pris en charge */ }
   bind();
   renderFavCount();
   renderVersion();

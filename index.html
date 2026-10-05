@@ -184,16 +184,20 @@
       <section id="setEditOff">
         <h3>Modifier la liste</h3>
         <p>Pour ajouter ou supprimer des centrales pour tout le monde, saisissez le code d'édition.</p>
-        <div class="field-search">
-          <input type="password" id="setToken" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Code d'édition" aria-label="Code d'édition">
-          <button type="button" class="btn-plain small" id="setTokenGo">Activer</button>
-        </div>
+        <!-- Formulaire « identifiant + mot de passe » : le trousseau (iCloud, Google) propose
+             d'enregistrer le code et de le remplir en un geste s'il faut le ressaisir. -->
+        <form class="field-search" id="setTokenForm" action="#" autocomplete="on">
+          <input type="text" name="username" autocomplete="username" value="Navigation Centrales" hidden>
+          <input type="password" id="setToken" name="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" placeholder="Code d'édition" aria-label="Code d'édition">
+          <button type="submit" class="btn-plain small" id="setTokenGo">Activer</button>
+        </form>
         <small id="setTokenMsg"></small>
       </section>
 
       <section id="setEditOn" hidden>
         <h3>Modifier la liste</h3>
         <p>L'édition est activée sur ce téléphone. Vos ajouts et suppressions sont envoyés à tout le monde.</p>
+        <p>Le code est effacé si vous supprimez l'icône de l'appli. Gardez-le dans vos mots de passe pour le ressaisir facilement.</p>
         <label class="field">
           <span>Votre prénom (apparaît dans l'historique des modifications)</span>
           <input type="text" id="setAuthor" autocomplete="given-name" placeholder="Facultatif">
