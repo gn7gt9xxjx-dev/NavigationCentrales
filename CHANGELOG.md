@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.5.1
+- Le nom de l'appli installée devient « Navigation Centrales » (manifeste et titre iOS).
+
 ## 1.5.0
 - Bandeau « Installer » : sur Android (et Chrome sur ordinateur) il lance l'installation en un geste ; sur iPhone il affiche les étapes (Partager → Sur l'écran d'accueil), car Apple n'autorise pas l'installation automatique. Masqué une fois l'appli installée.
 
