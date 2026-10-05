@@ -1,6 +1,6 @@
 {
   "name": "Navigation Centrales",
-  "short_name": "Centrales",
+  "short_name": "Navigation Centrales",
   "description": "Lancer la navigation vers une centrale, même sans réseau.",
   "lang": "fr",
   "start_url": "./",
