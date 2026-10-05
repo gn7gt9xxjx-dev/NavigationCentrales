@@ -765,7 +765,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.5.0";
 
 async function renderVersion() {
   let cache = "";
@@ -796,14 +796,64 @@ async function init() {
   renderStatus();
   syncNow();
 
-  if (isApple && !isStandalone) {
-    const note = $("#note");
-    note.hidden = false;
-    note.textContent = "Pour l'installer : touchez Partager, puis «\u00a0Sur l'écran d'accueil\u00a0».";
+  // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation)
+  if (isApple && !isStandalone) $("#install").hidden = false;
+}
+
+/* ===================== Installation ===================== */
+
+// Android / ordinateur (Chrome, Edge) : le navigateur fournit une invite d'installation.
+// iPhone : aucune API, on explique la marche à suivre.
+let installEvent = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEvent = e;
+  if (!isStandalone) $("#install").hidden = false;
+});
+window.addEventListener("appinstalled", () => { installEvent = null; $("#install").hidden = true; });
+
+$("#installGo").addEventListener("click", async () => {
+  if (installEvent) {
+    installEvent.prompt();
+    const { outcome } = await installEvent.userChoice;
+    if (outcome === "accepted") $("#install").hidden = true;
+    installEvent = null;
+  } else {
+    $("#installHelp").showModal();
   }
+});
+$("#installHelpClose").addEventListener("click", () => $("#installHelp").close());
+$("#installHelp").addEventListener("click", (e) => { if (e.target === $("#installHelp")) $("#installHelp").close(); });
+
+/* ===================== Mise à jour de l'appli ===================== */
+
+// Le service worker se remplace tout seul (skipWaiting), mais la page déjà
+// ouverte garde l'ancien code : on propose de la recharger.
+let swReg = null;
+
+function showUpdate() { $("#update").hidden = false; }
+
+async function checkUpdate() {
+  if (!swReg || !navigator.onLine) return false;
+  try { await swReg.update(); return true; } catch { return false; }
 }
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) showUpdate(); });
+  navigator.serviceWorker.register("sw.js").then((reg) => { swReg = reg; }).catch(() => {});
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkUpdate(); });
 }
+$("#updateGo").addEventListener("click", () => location.reload());
+$("#setCheckUpdate").addEventListener("click", async () => {
+  const msg = $("#setUpdateMsg");
+  msg.textContent = "Recherche…";
+  const ok = await checkUpdate();
+  // Une mise à jour trouvée fait apparaître le bandeau (controllerchange).
+  setTimeout(() => {
+    msg.textContent = !ok ? "Impossible de vérifier : réseau indisponible."
+      : $("#update").hidden ? "Vous avez la dernière version." : "Une nouvelle version est prête : touchez « Mettre à jour ».";
+  }, 1500);
+});
 init();
