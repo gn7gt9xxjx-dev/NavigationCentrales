@@ -51,7 +51,14 @@
   </header>
 
   <main id="main">
-    <p class="note" id="note" hidden></p>
+    <div class="update" id="update" hidden>
+      <span>Une nouvelle version est disponible.</span>
+      <button type="button" id="updateGo">Mettre à jour</button>
+    </div>
+    <div class="update" id="install" hidden>
+      <span>Ajouter l'appli à l'écran d'accueil.</span>
+      <button type="button" id="installGo">Installer</button>
+    </div>
     <ul class="list" id="list"></ul>
     <p class="empty" id="empty" hidden></p>
   </main>
@@ -140,6 +147,25 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAction" hidden>Annuler</button></div>
 
+  <!-- Aide à l'installation (iPhone : pas d'installation automatique possible) -->
+  <dialog class="sheet" id="installHelp" aria-labelledby="installHelpTitle">
+    <div class="sheet-body settings">
+      <div class="sheet-head">
+        <h2 id="installHelpTitle">Installer l'appli</h2>
+        <button type="button" class="link" id="installHelpClose">Fermer</button>
+      </div>
+      <section>
+        <p>Sur iPhone, Apple impose de le faire à la main, depuis Safari :</p>
+        <ol class="steps">
+          <li>Touchez le bouton <strong>Partager</strong> (le carré avec une flèche vers le haut), en bas de l'écran.</li>
+          <li>Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.</li>
+          <li>Touchez <strong>Ajouter</strong>.</li>
+        </ol>
+        <p>Ouvrez ensuite l'appli depuis l'icône. Si vous utilisez un autre navigateur que Safari, ouvrez d'abord cette adresse dans Safari.</p>
+      </section>
+    </div>
+  </dialog>
+
   <!-- Réglages : liste partagée et code d'édition -->
   <dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
     <div class="sheet-body settings">
@@ -178,6 +204,8 @@
       <section>
         <h3>À propos</h3>
         <p id="setVersion"></p>
+        <button type="button" class="btn-plain wide" id="setCheckUpdate">Rechercher une mise à jour</button>
+        <small id="setUpdateMsg"></small>
       </section>
     </div>
   </dialog>
