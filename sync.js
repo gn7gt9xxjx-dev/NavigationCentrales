@@ -35,7 +35,7 @@ const Sync = (() => {
   // Même mise en forme que tools/extract.py : une centrale par ligne (historique Git lisible).
   function serialize(list) {
     return "[\n" + list.map((p) =>
-      `{"n": ${JSON.stringify(p.n)}, "lat": ${p.lat}, "lon": ${p.lon}${p.r ? `, "r": ${JSON.stringify(p.r)}` : ""}}`
+      `{"n": ${JSON.stringify(p.n)}, "lat": ${p.lat}, "lon": ${p.lon}${p.r ? `, "r": ${JSON.stringify(p.r)}` : ""}${p.note ? `, "note": ${JSON.stringify(p.note)}` : ""}}`
     ).join(",\n") + "\n]\n";
   }
 

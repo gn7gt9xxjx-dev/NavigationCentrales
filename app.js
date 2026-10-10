@@ -124,6 +124,7 @@ function rowHtml(p, tokens) {
     meta = `<span>${formatCoord(p.lat)}, ${formatCoord(p.lon)}</span>`;
   }
   if (p.r) meta += `<span class="tag">${p.r}</span>`;
+  if (p.note) meta += `<span class="tag note">${escapeHtml(p.note)}</span>`;
   if (p.pending) meta += `<span class="tag pending">En attente d'envoi</span>`;
   return `<li><button class="row" data-id="${p.id}">
     <span class="row-main"><span class="row-name">${highlight(p, tokens)}</span><span class="row-meta">${meta}</span></span>
@@ -220,6 +221,8 @@ function openSheet(p) {
   if (state.pos) meta = `${formatKm(distanceKm(state.pos, p))} à vol d'oiseau, direction ${compass(bearing(state.pos, p))}`;
   if (p.r) meta += ` — ${p.r}`;
   $("#sheetMeta").textContent = meta;
+  $("#sheetNote").textContent = p.note || "";
+  $("#sheetNote").hidden = !p.note;
   const star = $("#sheetStar"), fav = state.favs.has(p.id);
   star.setAttribute("aria-pressed", fav);
   star.setAttribute("aria-label", fav ? "Retirer des favoris" : "Ajouter aux favoris");
@@ -282,7 +285,7 @@ function prep(p, pending = false) {
   const f = fold(p.n);
   return { ...p, id: Sync.idOf(p), pending, fold: f, canon: canon(f) };
 }
-const rawOf = (p) => { const o = { n: p.n, lat: p.lat, lon: p.lon }; if (p.r) o.r = p.r; return o; };
+const rawOf = (p) => { const o = { n: p.n, lat: p.lat, lon: p.lon }; if (p.r) o.r = p.r; if (p.note) o.note = p.note; return o; };
 
 function rebuild() {
   const pendingIds = new Set(state.pending.filter((o) => o.op === "add").map((o) => Sync.idOf(o.item)));
@@ -765,7 +768,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.5.1";
+const APP_VERSION = "1.6.0";
 
 async function renderVersion() {
   let cache = "";

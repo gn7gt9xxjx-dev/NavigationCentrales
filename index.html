@@ -75,6 +75,8 @@
         </button>
       </div>
 
+      <p class="sheet-note" id="sheetNote" hidden></p>
+
       <p class="offline-hint" id="offlineHint" hidden>
         Pas de réseau : Waze ne pourra pas calculer l'itinéraire. Plans et Google Maps fonctionnent si la zone a été téléchargée.
       </p>
@@ -198,6 +200,8 @@
           <span>Votre prénom (apparaît dans l'historique des modifications)</span>
           <input type="text" id="setAuthor" autocomplete="given-name" placeholder="Facultatif">
         </label>
+        <a class="btn-plain wide" id="setControl" href="https://claude.ai/artifact/4FKjJU1EHoGmAHA3dQMckk" target="_blank" rel="noopener">Contrôle des positions GPS</a>
+        <small>Suivi des vérifications et corrections des positions (nécessite du réseau).</small>
         <button type="button" class="link danger" id="setEditDisable">Désactiver l'édition sur ce téléphone</button>
       </section>
 

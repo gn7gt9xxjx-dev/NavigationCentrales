@@ -44,12 +44,12 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 - **Feuille de lancement** : boutons Waze / Google Maps / Plans ; l'appli préférée (dernière utilisée) passe en premier.
 - **Liste (base + modifications locales)** : `basePlants` = dernière liste partagée connue ; `plants` = `Sync.applyOps(basePlants, state.pending)`. `addPlant` / `removePlant` ajoutent une opération dans `state.pending` puis `changed()` → sauvegarde, rendu, `scheduleSync()`.
 - **Synchronisation** : `syncNow()` envoie les opérations en attente (si code d'édition) ou relit simplement la liste. Retire les opérations envoyées par identité d'objet. Déclenchée au lancement, au retour du réseau, au retour au premier plan (> 1 min), après chaque modification (délai 1,5 s).
-- **Réglages** : code d'édition (vérifié par une lecture API), prénom (apparaît dans les commits), mise à jour manuelle.
+- **Réglages** : code d'édition (vérifié par une lecture API), prénom (apparaît dans les commits), mise à jour manuelle, lien vers la page « Contrôle des positions GPS » (artifact claude.ai, visible seulement avec le code d'édition).
 - **Ajout d'une centrale** : module `Editor` ; Leaflet chargé à la demande depuis `vendor/`, fonds OSM / Esri satellite, recherche Nominatim, `parseCoords()` accepte décimal, virgule décimale, DMS et liens Google Maps/Waze. Alerte si une centrale existe à < 1 km.
 
 ### Données et identifiants
 
-- Format de `data/centrales.json` : **une centrale par ligne**, `{"n": "NOM", "lat": 45.1, "lon": 1.9}` + `"r": "La Réunion"|"Guyane"` facultatif. `Sync.serialize()` et `tools/extract.py` produisent exactement ce format (diffs Git lisibles) — les garder identiques.
+- Format de `data/centrales.json` : **une centrale par ligne**, `{"n": "NOM", "lat": 45.1, "lon": 1.9}` + `"r": "La Réunion"|"Guyane"` facultatif + `"note": "Emplacement à confirmer"` facultatif (remarque affichée dans la liste et la fiche de navigation). `Sync.serialize()` et `tools/extract.py` produisent exactement ce format (diffs Git lisibles) — les garder identiques.
 - Identifiant d'une centrale : `` `${n}|${lat}|${lon}` `` (`Sync.idOf`). Favoris, récents et suppressions s'appuient dessus : modifier le nom ou les coordonnées d'une centrale change son identifiant.
 - Plusieurs centrales peuvent avoir le même nom (ex. CASTILLON, REVIN) à des endroits différents.
 
