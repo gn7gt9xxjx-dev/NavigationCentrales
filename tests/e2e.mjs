@@ -15,7 +15,8 @@ await new Promise((r) => setTimeout(r, 800));
 const URL_APP = `http://localhost:${PORT}/`;
 
 // ---- Faux GitHub (API contents + fichier brut) ----
-let remote = readFileSync(join(root, "data/centrales.json"), "utf8");
+let remote = readFileSync(join(root, "data/centrales.json"), "utf8")
+  .replace(/(\{"n": "CNPE St Laurent", "lat": [\d.-]+, "lon": [\d.-]+)\}/, '$1, "note": "Emplacement à confirmer"}');
 let sha = "sha0", rev = 0;
 const commits = [];
 async function github(route) {
@@ -62,6 +63,17 @@ try {
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
   ok("recherche « st lau » → CNPE St Laurent");
+  assert.equal(await A.textContent(".row .tag.note"), "Emplacement à confirmer");
+  await A.click(".row"); await A.waitForTimeout(300);
+  assert.equal(await A.isVisible("#sheetNote"), true);
+  assert.equal(await A.textContent("#sheetNote"), "Emplacement à confirmer");
+  await A.click("#close"); await A.waitForTimeout(200);
+  await A.fill("#q", "rhinau"); await A.waitForTimeout(200);
+  await A.click(".row"); await A.waitForTimeout(300);
+  assert.equal(await A.isVisible("#sheetNote"), false);
+  await A.click("#close"); await A.waitForTimeout(200);
+  await A.fill("#q", "");
+  ok("remarque « Emplacement à confirmer » dans la liste et la fiche, absente ailleurs");
 
   // Hors ligne au relancement
   await A.evaluate(() => navigator.serviceWorker.ready);
@@ -73,14 +85,17 @@ try {
 
   // Code d'édition
   await A.click("#openSettings");
+  assert.equal(await A.isVisible("#setControl"), false);
   assert.match(await A.textContent("#setVersion"), /^Version \d+\.\d+\.\d+ \(cache \d{4}-\d{2}-\d{2}\.\d+\)$/);
   ok("réglages : numéro de version et de cache affichés");
   await A.fill("#setToken", "bad"); await A.click("#setTokenGo"); await A.waitForTimeout(300);
   assert.match(await A.$eval("#setTokenMsg", (e) => e.textContent), /pas valide/);
   await A.fill("#setToken", "good"); await A.click("#setTokenGo"); await A.waitForTimeout(500);
+  assert.equal(await A.isVisible("#setControl"), true);
+  assert.match(await A.getAttribute("#setControl", "href"), /^https:\/\/claude\.ai\/artifact\//);
   await A.click("#setClose");
   assert.equal(await A.isVisible("#add"), true);
-  ok("code refusé puis accepté, bouton + visible");
+  ok("code refusé puis accepté, bouton + visible, lien « Contrôle des positions GPS » dans les réglages");
 
   // Ajout synchronisé
   await A.click("#add"); await A.waitForTimeout(300);
@@ -88,7 +103,8 @@ try {
   await A.waitForTimeout(2500);
   assert.equal(count(), initial + 1);
   assert.match(commits.at(-1), /^Ajout de TEST AJOUT/);
-  ok("ajout envoyé au dépôt (commit)");
+  assert.match(remote, /\{"n": "CNPE St Laurent", "lat": [\d.-]+, "lon": [\d.-]+, "note": "Emplacement à confirmer"\}/);
+  ok("ajout envoyé au dépôt (commit), remarques existantes conservées");
 
   // Autre téléphone
   const { page: B } = await phone("Pixel 7");

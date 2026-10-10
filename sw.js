@@ -1,7 +1,7 @@
 // Service worker : met toute l'appli en cache pour qu'elle s'ouvre sans réseau.
 // ➜ Changez VERSION à chaque modification (liste des centrales, design…)
 //   pour que les téléphones téléchargent la nouvelle version.
-const VERSION = "2026-10-05.3";
+const VERSION = "2026-10-10.1";
 const CACHE = `centrales-${VERSION}`;
 
 const FILES = [
