@@ -258,6 +258,16 @@ body:not(.can-edit) #add, body:not(.can-edit) #remove { display: none; }
 .status.warn { color: var(--danger); }
 .tag.pending { color: var(--star); }
 @media (prefers-color-scheme: dark) { .tag.pending { color: var(--star); } }
+/* Remarque sur une centrale (ex. « Emplacement à confirmer ») */
+:root { --note-ink: #8A5300; }
+@media (prefers-color-scheme: dark) { :root { --note-ink: #F2B21B; } }
+.row-meta .tag.note { color: var(--note-ink); }
+.sheet-note {
+  margin-top: 14px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--star) 22%, transparent);
+  color: var(--ink); font-weight: 700; font-size: 1rem; line-height: 1.35;
+}
+a.btn-plain { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .top-actions { gap: 8px; }
 
 .settings section { margin-top: 20px; }

@@ -2,6 +2,10 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.6.0
+- Remarque sur une centrale (champ `note` de la liste partagée, ex. « Emplacement à confirmer ») : affichée dans la liste et dans la fiche de navigation.
+- Réglages (avec le code d'édition) : lien vers la page « Contrôle des positions GPS ».
+
 ## 1.5.1
 - Le nom de l'appli installée devient « Navigation Centrales » (manifeste et titre iOS).
 
