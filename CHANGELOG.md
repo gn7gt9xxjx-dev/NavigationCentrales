@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.7.0
+- Récents : balayer une centrale vers la gauche (comme sur l'iPhone). À moitié : boutons « Favori » (jaune) et « Supprimer » (rouge) ; à fond : retirée des récents directement. Elle reste dans les favoris si elle y est. « Annuler » dans le message pour la remettre.
+
 ## 1.6.0
 - Remarque sur une centrale (champ `note` de la liste partagée, ex. « Emplacement à confirmer ») : affichée dans la liste et dans la fiche de navigation.
 - Réglages (avec le code d'édition) : lien vers la page « Contrôle des positions GPS ».

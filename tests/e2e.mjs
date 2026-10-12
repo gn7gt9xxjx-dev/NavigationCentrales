@@ -136,7 +136,48 @@ try {
   assert.ok(remote.includes("HORS LIGNE") && remote.includes("AUTRE"));
   ok("modification hors ligne envoyée au retour du réseau, sans écraser une modif concurrente");
 
-  const errors = [...A.errors, ...B.errors];
+  // Récents : balayage vers la gauche
+  const { page: C } = await phone();
+  const ids = await C.evaluate(() => {
+    const ids = plants.slice(0, 3).map((p) => p.id);
+    localStorage.setItem("recents", JSON.stringify(ids));
+    return ids;
+  });
+  await C.reload(); await C.waitForSelector(".swipe");
+  const recentIds = () => C.$$eval(".swipe", (r) => r.map((x) => x.dataset.id));
+  const stored = (k) => C.evaluate((k) => JSON.parse(localStorage.getItem(k) || "[]"), k);
+  async function swipe(sel, dx) {
+    const b = await C.locator(sel).boundingBox();
+    const x = b.x + b.width - 30, y = b.y + b.height / 2;
+    await C.mouse.move(x, y); await C.mouse.down();
+    for (let i = 1; i <= 12; i++) await C.mouse.move(x + (dx * i) / 12, y);
+    await C.mouse.up(); await C.waitForTimeout(600);
+  }
+  assert.deepEqual(await recentIds(), ids);
+  await swipe(`.swipe[data-id="${ids[0]}"]`, -110);
+  assert.equal(await C.isVisible(`.swipe[data-id="${ids[0]}"] .swipe-del`), true);
+  assert.equal(await C.isVisible("#sheet"), false);
+  await C.click(`.swipe[data-id="${ids[0]}"] .swipe-fav`); await C.waitForTimeout(500);
+  assert.deepEqual(await stored("favs"), [ids[0]]);
+  assert.equal(await C.textContent("#favCount"), "1");
+  assert.deepEqual(await recentIds(), ids);
+  ok("récents : balayage à moitié → boutons Favori / Supprimer, Favori ajoute aux favoris");
+  await swipe(`.swipe[data-id="${ids[0]}"]`, -330);
+  assert.deepEqual(await recentIds(), ids.slice(1));
+  assert.deepEqual(await stored("recents"), ids.slice(1));
+  assert.deepEqual(await stored("favs"), [ids[0]]);
+  assert.equal((await C.$$(`.row[data-id="${ids[0]}"] .row-star`)).length, 1);
+  ok("récents : balayage à fond → retirée des récents, reste dans les favoris");
+  await C.click("#toastAction"); await C.waitForTimeout(300);
+  assert.deepEqual(await recentIds(), ids);
+  await swipe(`.swipe[data-id="${ids[1]}"]`, -110);
+  await C.click(`.swipe[data-id="${ids[1]}"] .swipe-del`); await C.waitForTimeout(600);
+  assert.deepEqual(await recentIds(), [ids[0], ids[2]]);
+  await C.click(`.swipe[data-id="${ids[2]}"] .row`); await C.waitForTimeout(300);
+  assert.equal(await C.isVisible("#sheet"), true);
+  ok("récents : annulation, bouton Supprimer, simple toucher ouvre toujours la fiche");
+
+  const errors = [...A.errors, ...B.errors, ...C.errors];
   assert.deepEqual(errors, []);
   ok("aucune erreur JavaScript");
   console.log("\nTous les tests passent.");
