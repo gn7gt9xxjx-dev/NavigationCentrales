@@ -114,7 +114,10 @@ function highlight(p, tokens) {
   return open ? html + "</mark>" : html;
 }
 
-function rowHtml(p, tokens) {
+const ICON_STAR_BIG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+function rowHtml(p, tokens, swipe = false) {
   let meta = "";
   if (state.pos) {
     const km = distanceKm(state.pos, p);
@@ -126,14 +129,20 @@ function rowHtml(p, tokens) {
   if (p.r) meta += `<span class="tag">${p.r}</span>`;
   if (p.note) meta += `<span class="tag note">${escapeHtml(p.note)}</span>`;
   if (p.pending) meta += `<span class="tag pending">En attente d'envoi</span>`;
-  return `<li><button class="row" data-id="${p.id}">
+  const fav = state.favs.has(p.id);
+  // Récents : boutons révélés en balayant la ligne vers la gauche (voir « Balayage des récents »)
+  const actions = swipe ? `<div class="swipe-actions">
+    <button type="button" class="swipe-fav${fav ? " on" : ""}" data-swipe="fav" tabindex="-1">${ICON_STAR_BIG}<span>${fav ? "Retirer" : "Favori"}</span></button>
+    <button type="button" class="swipe-del" data-swipe="del" tabindex="-1">${ICON_TRASH}<span>Supprimer</span></button>
+  </div>` : "";
+  return `<li${swipe ? ` class="swipe" data-id="${p.id}"` : ""}>${actions}<button class="row" data-id="${p.id}">
     <span class="row-main"><span class="row-name">${highlight(p, tokens)}</span><span class="row-meta">${meta}</span></span>
-    ${state.favs.has(p.id) ? ICON_STAR : ""}${ICON_CHEV}
+    ${fav ? ICON_STAR : ""}${ICON_CHEV}
   </button></li>`;
 }
 
-function group(label, items, tokens, small = false) {
-  return `<li><h2 class="group-label${small ? " small" : ""}">${label}</h2><ul class="group">${items.map((p) => rowHtml(p, tokens)).join("")}</ul></li>`;
+function group(label, items, tokens, small = false, swipe = false) {
+  return `<li><h2 class="group-label${small ? " small" : ""}">${label}</h2><ul class="group">${items.map((p) => rowHtml(p, tokens, swipe)).join("")}</ul></li>`;
 }
 
 function render() {
@@ -145,6 +154,7 @@ function render() {
 
   const list = $("#list"), empty = $("#empty");
   let html = "";
+  swipeOpen = null;   // les lignes sont redessinées, aucune ne reste ouverte
 
   if (state.mode === "near") {
     if (!state.pos) {
@@ -161,7 +171,7 @@ function render() {
     if (items.length) html = group(state.mode === "fav" ? "Favoris" : `${items.length} résultat${items.length > 1 ? "s" : ""}`, items, rawTokens, true);
   } else {
     const recents = state.recents.map((id) => byId.get(id)).filter(Boolean);
-    if (recents.length) html += group("Récents", recents, [], true);
+    if (recents.length) html += group("Récents", recents, [], true, true);
     let letter = "", bucket = [];
     for (const p of items) {
       const l = /[a-z]/.test(p.fold[0]) ? p.fold[0].toUpperCase() : "#";
@@ -247,6 +257,15 @@ function launched(appKey) {
   state.preferredApp = appKey;
   store.set("preferredApp", appKey);
   setTimeout(() => { closeSheet(); render(); }, 400);
+}
+
+function toggleFav(id) {
+  if (state.favs.has(id)) state.favs.delete(id); else state.favs.add(id);
+  store.set("favs", [...state.favs]);
+  const fav = state.favs.has(id);
+  renderFavCount();
+  toast(fav ? "Ajoutée aux favoris" : "Retirée des favoris");
+  return fav;
 }
 
 let toastTimer, toastUndo = null;
@@ -445,6 +464,137 @@ async function activateToken() {
   syncNow();
 }
 
+/* ===================== Balayage des récents ===================== */
+
+// Comme dans les listes de l'iPhone : balayer une ligne des récents vers la gauche
+// révèle « Favori » et « Supprimer » ; balayer à fond la retire des récents
+// (sans toucher aux favoris). Pointer events + `touch-action: pan-y` : le défilement
+// vertical reste au navigateur, le geste horizontal nous revient.
+const SWIPE_OPEN = 160;       // largeur des deux boutons
+const SWIPE_FULL = 0.6;       // au-delà de cette part de la largeur : suppression
+let swipeOpen = null;         // ligne restée ouverte
+let swipeDrag = null;         // geste en cours
+let swipeEatClick = false;    // le clic qui suit un geste ne doit pas ouvrir la fiche
+
+function setSwipe(li, x) {
+  li.style.setProperty("--x", `${x}px`);
+  if (x) li.classList.add("active");
+}
+
+function closeSwipe(li = swipeOpen) {
+  if (!li) return;
+  if (li === swipeOpen) swipeOpen = null;
+  li.classList.remove("armed");
+  setSwipe(li, 0);
+  setTimeout(() => { if (li !== swipeOpen && !li.classList.contains("dragging")) li.classList.remove("active"); }, 300);
+}
+
+function removeRecent(id) {
+  const p = byId.get(id), idx = state.recents.indexOf(id);
+  if (!p || idx < 0) return render();
+  state.recents.splice(idx, 1);
+  store.set("recents", state.recents);
+  render();
+  toast(`« ${p.n} » retirée des récents`, () => {
+    if (!state.recents.includes(id)) state.recents.splice(idx, 0, id);
+    state.recents = state.recents.slice(0, 5);
+    store.set("recents", state.recents);
+    render();
+  });
+}
+
+function swipeDelete(li) {
+  if (swipeOpen === li) swipeOpen = null;
+  li.classList.add("armed", "leaving");
+  setSwipe(li, -li.offsetWidth);
+  li.style.height = `${li.offsetHeight}px`;
+  void li.offsetHeight;          // fixe la hauteur de départ de l'animation
+  li.style.height = "0px";
+  setTimeout(() => removeRecent(li.dataset.id), 380);
+}
+
+function bindSwipe() {
+  const list = $("#list");
+
+  document.addEventListener("pointerdown", (e) => {
+    swipeEatClick = false;
+    const li = e.target.closest(".swipe");
+    // Toucher ailleurs referme la ligne ouverte (et ce toucher-là ne fait rien d'autre dans la liste)
+    if (swipeOpen && swipeOpen !== li) {
+      closeSwipe();
+      if (list.contains(e.target)) swipeEatClick = true;
+    }
+    if (!li || e.button > 0 || e.target.closest(".swipe-actions") || li.classList.contains("leaving")) return;
+    const base = li === swipeOpen ? -SWIPE_OPEN : 0;
+    swipeDrag = { li, id: e.pointerId, x0: e.clientX, y0: e.clientY, base, x: base, moved: false, lastX: e.clientX, lastT: e.timeStamp, vx: 0 };
+  });
+
+  document.addEventListener("pointermove", (e) => {
+    const d = swipeDrag;
+    if (!d || e.pointerId !== d.id) return;
+    const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+    if (!d.moved) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) { swipeDrag = null; return; }   // défilement vertical
+      d.moved = true;
+      d.li.classList.add("dragging", "active");
+      try { d.li.setPointerCapture(e.pointerId); } catch { /* sans importance */ }
+    }
+    const w = d.li.offsetWidth;
+    d.x = Math.max(-w, Math.min(0, d.base + dx));
+    const dt = e.timeStamp - d.lastT;
+    if (dt > 0) d.vx = (e.clientX - d.lastX) / dt;
+    d.lastX = e.clientX; d.lastT = e.timeStamp;
+    d.li.classList.toggle("armed", -d.x > w * SWIPE_FULL);
+    setSwipe(d.li, d.x);
+  });
+
+  const end = (e) => {
+    const d = swipeDrag;
+    if (!d || e.pointerId !== d.id) return;
+    swipeDrag = null;
+    if (!d.moved) {
+      // Simple toucher sur la ligne ouverte : on la referme sans ouvrir la fiche
+      if (d.li === swipeOpen) { closeSwipe(); swipeEatClick = true; }
+      return;
+    }
+    swipeEatClick = true;
+    d.li.classList.remove("dragging");
+    if (e.type === "pointerup" && d.li.classList.contains("armed")) return swipeDelete(d.li);
+    d.li.classList.remove("armed");
+    const flick = e.type === "pointerup" && d.vx < -0.5;
+    if (-d.x > SWIPE_OPEN / 2 || (flick && d.x < -20)) {
+      if (swipeOpen && swipeOpen !== d.li) closeSwipe();
+      swipeOpen = d.li;
+      setSwipe(d.li, -SWIPE_OPEN);
+    } else {
+      closeSwipe(d.li);
+    }
+  };
+  document.addEventListener("pointerup", end);
+  document.addEventListener("pointercancel", end);
+
+  // Le clic qui termine un geste est avalé avant d'atteindre la ligne
+  document.addEventListener("click", (e) => {
+    if (!swipeEatClick) return;
+    swipeEatClick = false;
+    if (list.contains(e.target)) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
+  list.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-swipe]");
+    if (!btn) return;
+    e.stopPropagation();
+    const li = btn.closest(".swipe");
+    if (btn.dataset.swipe === "del") return swipeDelete(li);
+    toggleFav(li.dataset.id);
+    closeSwipe(li);
+    setTimeout(render, 300);   // laisse la ligne se refermer avant de redessiner
+  });
+
+  window.addEventListener("scroll", () => { if (swipeOpen && !swipeDrag) closeSwipe(); }, { passive: true });
+}
+
 /* ===================== Événements ===================== */
 
 const byId = new Map();
@@ -477,16 +627,12 @@ function bind() {
   });
 
   $("#sheetStar").addEventListener("click", () => {
-    const p = state.current;
-    if (state.favs.has(p.id)) state.favs.delete(p.id); else state.favs.add(p.id);
-    store.set("favs", [...state.favs]);
-    const fav = state.favs.has(p.id);
+    const fav = toggleFav(state.current.id);
     $("#sheetStar").setAttribute("aria-pressed", fav);
     $("#sheetStar").setAttribute("aria-label", fav ? "Retirer des favoris" : "Ajouter aux favoris");
-    renderFavCount();
     render();
-    toast(fav ? "Ajoutée aux favoris" : "Retirée des favoris");
   });
+  bindSwipe();
 
   $("#goWaze").addEventListener("click", () => launched("waze"));
   $("#goGmaps").addEventListener("click", () => launched("gmaps"));
@@ -768,7 +914,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 
 async function renderVersion() {
   let cache = "";
