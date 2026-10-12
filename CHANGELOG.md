@@ -2,6 +2,10 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.7.1
+- Les données du téléphone (code d'édition, favoris, récents, liste) se conservent mieux : l'appli demande un stockage persistant, qui n'est plus vidé quand la place manque.
+- Réglages : rappel que supprimer l'icône de l'appli efface le code d'édition.
+
 ## 1.7.0
 - Récents : balayer une centrale vers la gauche (comme sur l'iPhone). À moitié : boutons « Favori » (jaune) et « Supprimer » (rouge) ; à fond : retirée des récents directement. Elle reste dans les favoris si elle y est. « Annuler » dans le message pour la remettre.
 
