@@ -914,7 +914,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.7.1";
 
 async function renderVersion() {
   let cache = "";
@@ -928,6 +928,9 @@ async function renderVersion() {
 /* ===================== Démarrage ===================== */
 
 async function init() {
+  // Demande un stockage « persistant » : sans cela, le navigateur peut vider le localStorage
+  // (code d'édition, favoris, liste) quand le téléphone manque de place.
+  try { navigator.storage?.persist?.().catch(() => {}); } catch { /* non pris en charge */ }
   bind();
   renderFavCount();
   renderVersion();
