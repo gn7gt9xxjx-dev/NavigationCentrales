@@ -2,6 +2,10 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.7.2
+- Bandeau « Une nouvelle version est disponible » : le numéro de la nouvelle version est indiqué entre parenthèses.
+- Juste après une mise à jour, l'appli ne lit plus que les fichiers de la nouvelle version (l'ancien cache pouvait encore servir un instant).
+
 ## 1.7.1
 - Les données du téléphone (code d'édition, favoris, récents, liste) se conservent mieux : l'appli demande un stockage persistant, qui n'est plus vidé quand la place manque.
 - Réglages : rappel que supprimer l'icône de l'appli efface le code d'édition.

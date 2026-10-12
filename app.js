@@ -914,7 +914,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.7.1";
+const APP_VERSION = "1.7.2";
 
 async function renderVersion() {
   let cache = "";
@@ -984,7 +984,14 @@ $("#installHelp").addEventListener("click", (e) => { if (e.target === $("#instal
 // ouverte garde l'ancien code : on propose de la recharger.
 let swReg = null;
 
-function showUpdate() { $("#update").hidden = false; }
+async function showUpdate() {
+  $("#update").hidden = false;
+  // Le nouveau service worker a déjà mis en cache le nouvel app.js : on y lit son numéro.
+  try {
+    const v = (await (await fetch("app.js")).text()).match(/APP_VERSION = "([\d.]+)"/)?.[1];
+    if (v && v !== APP_VERSION) $("#updateVersion").textContent = ` (${v})`;
+  } catch { /* numéro indisponible : le bandeau reste sans */ }
+}
 
 async function checkUpdate() {
   if (!swReg || !navigator.onLine) return false;
