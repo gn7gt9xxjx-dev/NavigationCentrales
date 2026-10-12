@@ -393,4 +393,37 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
 .pin svg { width: 34px; height: 44px; display: block; }
 .pin svg path { stroke: none; }
 .leaflet-container { font-family: var(--font); background: var(--line); }
+
+/* ---------- Balayage des récents (Favori / Supprimer) ---------- */
+:root { --swipe-del: #D93025; --swipe-fav-ink: #2A1E00; }
+.swipe {
+  position: relative; overflow: hidden;
+  touch-action: pan-y;                    /* défilement vertical au navigateur, horizontal à l'appli */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.swipe .row { transform: translateX(var(--x, 0px)); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+.swipe.dragging .row:active { background: none; }
+.swipe-actions {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: calc(var(--x, 0px) * -1);        /* toujours la place libérée par la ligne */
+  display: flex; overflow: hidden; visibility: hidden;
+  transition: width .28s cubic-bezier(.2, .8, .2, 1);
+}
+.swipe.active .swipe-actions { visibility: visible; }
+.swipe.dragging .row, .swipe.dragging .swipe-actions { transition: none; }
+.swipe-actions button {
+  flex: 1 1 0; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: .875rem; font-weight: 700; white-space: nowrap;
+  transition: flex-grow .2s ease-out, padding .2s ease-out;
+}
+.swipe-actions svg { width: 24px; height: 24px; flex: none; }
+.swipe-fav { background: var(--star); color: var(--swipe-fav-ink); }
+.swipe-fav svg path { fill: currentColor; stroke: none; }
+.swipe-fav.on svg path { fill: none; stroke: currentColor; }   /* déjà favori : étoile vide = retirer */
+.swipe-del { background: var(--swipe-del); color: #fff; }
+/* Balayage à fond : « Supprimer » occupe toute la place, collé à la ligne */
+.swipe.armed .swipe-fav { flex-grow: 0; }
+.swipe.armed .swipe-del { align-items: flex-start; padding-left: 22px; }
+.swipe.leaving { transition: height .2s ease-in .16s; }
 .leaflet-control-attribution { font-size: 10px; }
