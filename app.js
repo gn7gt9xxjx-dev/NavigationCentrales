@@ -99,18 +99,18 @@ const tileLayers = (L) => ({
 // Chaque centrale porte `up` et `geh` dans la liste partagée ; sans eux elle est grise.
 const COLOR = {
   bleu: "#1F6FD1", orange: "#F4511E", noir: "#222222", vert: "#43A047", violet: "#8E24AA",
-  jaune: "#FBD000", rouge: "#E53935", lime: "#B5C200", ambre: "#FB8C00", turquoise: "#00897B",
+  jaune: "#FBD000", rouge: "#E53935", lime: "#B5C200", ambre: "#FB8C00", turquoise: "#00897B", brun: "#6D4C41",
 };
 const GREY = "#8C98A5";
 const GROUPS = [
-  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "ambre"], ["N4", "turquoise"], ["EPR", "violet"]] },
-  { up: "UP Centre", geh: [["GEH Dordogne", "bleu"], ["GEH Loire-Ardèche", "orange"], ["GEH Limoges", "noir"], ["GEH BERGERAC", "vert"]] },
+  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "ambre"], ["CP1/CP2", "orange"], ["N4", "turquoise"]] },
+  { up: "UP Centre", geh: [["GEH Dordogne", "bleu"], ["GEH Loire-Ardèche", "orange"], ["GEH Limoges", "noir"], ["GEH BERGERAC", "vert"], ["GEH Lot Truyère", "ambre"], ["GEH Ouest", "violet"], ["GEH Inconnu", "jaune"]] },
   { up: "UP Méditerranée", geh: [["GEH Durance", "violet"], ["GEH Var Roya", "bleu"]] },
-  { up: "UP Sud-Ouest", geh: [["GEH Inconnu", "jaune"], ["GEH Adour et Gaves", "bleu"], ["GEH Aude Ariège", "orange"], ["GEH Garonne", "noir"]] },
+  { up: "UP Sud-Ouest", geh: [["GEH Inconnu", "jaune"], ["GEH Adour et Gaves", "bleu"], ["GEH Aude Ariège", "orange"], ["GEH Garonne", "noir"], ["GEH Tarn Agout", "violet"]] },
   { up: "SEI / PEI", geh: [["SEI", "bleu"], ["PEI", "orange"]] },
   { up: "UP Alpes", geh: [["GEH Savoie Mont Blanc", "bleu"], ["GEH Ecrins Vercors", "vert"], ["GEH Vallée de la Maurienne", "noir"]] },
   { up: "UP Est", geh: [["GEH Jura-Bourgogne", "bleu"], ["GEH Rhin", "orange"], ["GEH Revin-St-Nicolas", "vert"], ["GEH Inconnu", "jaune"]] },
-  { up: "Thermique", type: "thermique", geh: [] },
+  { up: "Thermique", type: "thermique", geh: [["CPT", "brun"]] },
 ];
 const GROUP_COLOR = new Map(GROUPS.flatMap((g) => g.geh.map(([geh, c]) => [`${g.up}|${geh}`, COLOR[c]])));
 const UP_TYPE = new Map(GROUPS.map((g) => [g.up, g.type || "hydro"]));
