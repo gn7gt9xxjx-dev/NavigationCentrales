@@ -99,12 +99,15 @@ try {
 
   // Ajout synchronisé
   await A.click("#add"); await A.waitForTimeout(300);
-  await A.fill("#fName", "TEST AJOUT"); await A.fill("#fCoords", "45.5, 6.5"); await A.click("#editorSave");
+  await A.fill("#fName", "TEST AJOUT"); await A.fill("#fCoords", "45.5, 6.5");
+  await A.selectOption("#fGroup", "UP Alpes|GEH Ecrins Vercors");
+  await A.click("#editorSave");
   await A.waitForTimeout(2500);
   assert.equal(count(), initial + 1);
   assert.match(commits.at(-1), /^Ajout de TEST AJOUT/);
   assert.match(remote, /\{"n": "CNPE St Laurent", "lat": [\d.-]+, "lon": [\d.-]+, "note": "Emplacement à confirmer"\}/);
-  ok("ajout envoyé au dépôt (commit), remarques existantes conservées");
+  assert.ok(remote.includes('{"n": "TEST AJOUT", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors"}'));
+  ok("ajout envoyé au dépôt (commit) avec son groupe, remarques existantes conservées");
 
   // Autre téléphone
   const { page: B } = await phone("Pixel 7");
@@ -176,6 +179,38 @@ try {
   await C.click(`.swipe[data-id="${ids[2]}"] .row`); await C.waitForTimeout(300);
   assert.equal(await C.isVisible("#sheet"), true);
   ok("récents : annulation, bouton Supprimer, simple toucher ouvre toujours la fiche");
+
+  // Autour de moi : liste avec icônes, puis carte
+  await C.click("#close"); await C.waitForTimeout(200);
+  await C.click('[data-mode="near"]'); await C.waitForTimeout(500);
+  assert.equal(await C.isVisible("#views"), true);
+  assert.equal((await C.$$(".row.with-icon .pi")).length > 10, true);
+  await C.click('[data-view="map"]'); await C.waitForSelector("#nmap .mk"); await C.waitForTimeout(500);
+  const markers = () => C.$$eval("#nmap .mk", (m) => m.length);
+  const total = await C.evaluate(() => plants.length);
+  assert.equal(await markers(), total);
+  assert.equal(await C.isVisible("#list .row"), false);
+  assert.equal(await C.isVisible(".me"), true);
+  ok("carte « Autour de moi » : toutes les centrales et la position affichées");
+  await C.fill("#q", "cnpe"); await C.waitForTimeout(300);
+  assert.equal(await markers(), await C.evaluate(() => plants.filter((p) => p.n.startsWith("CNPE")).length));
+  await C.click("#nmap .mk"); await C.waitForTimeout(300);
+  assert.equal(await C.isVisible("#sheet"), true);
+  assert.match(await C.textContent("#sheetName"), /^CNPE /);
+  await C.click("#close"); await C.waitForTimeout(200);
+  ok("carte : la recherche filtre les centrales, toucher une centrale ouvre sa fiche");
+  await C.fill("#q", ""); await C.waitForTimeout(300);
+  await C.click("#nmLegend"); await C.waitForTimeout(300);
+  const before = await markers();
+  await C.uncheck('#legendBody input[data-up="UP Alpes"]'); await C.waitForTimeout(300);
+  assert.equal(await markers(), before - 1);   // TEST AJOUT est la seule centrale de l'UP Alpes
+  await C.check('#legendBody input[data-up="UP Alpes"]'); await C.waitForTimeout(300);
+  assert.equal(await markers(), before);
+  await C.click("#legendClose");
+  await C.reload(); await C.waitForSelector(".row");
+  await C.click('[data-mode="near"]'); await C.waitForSelector("#nmap .mk");
+  assert.equal(await C.getAttribute('[data-view="map"]', "aria-pressed"), "true");
+  ok("légende : masquer / réafficher une UP ; le choix Carte est mémorisé");
 
   const errors = [...A.errors, ...B.errors, ...C.errors];
   assert.deepEqual(errors, []);

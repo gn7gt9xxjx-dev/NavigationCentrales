@@ -33,10 +33,15 @@ const Sync = (() => {
   }
 
   // Même mise en forme que tools/extract.py : une centrale par ligne (historique Git lisible).
+  // Champs dans cet ordre, champs vides omis ; un champ inconnu (ajouté par une version plus
+  // récente de l'appli) est conservé à la fin plutôt que perdu.
+  const KEYS = ["n", "lat", "lon", "up", "geh", "r", "note"];
   function serialize(list) {
-    return "[\n" + list.map((p) =>
-      `{"n": ${JSON.stringify(p.n)}, "lat": ${p.lat}, "lon": ${p.lon}${p.r ? `, "r": ${JSON.stringify(p.r)}` : ""}${p.note ? `, "note": ${JSON.stringify(p.note)}` : ""}}`
-    ).join(",\n") + "\n]\n";
+    return "[\n" + list.map((p) => {
+      const keys = [...KEYS, ...Object.keys(p).filter((k) => !KEYS.includes(k))];
+      return "{" + keys.filter((k) => p[k] != null && p[k] !== "")
+        .map((k) => `${JSON.stringify(k)}: ${JSON.stringify(p[k])}`).join(", ") + "}";
+    }).join(",\n") + "\n]\n";
   }
 
   function toBase64(str) {

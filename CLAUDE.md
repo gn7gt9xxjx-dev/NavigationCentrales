@@ -40,7 +40,9 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 
 - **Utilitaires** : `fold()` normalise un nom caractère par caractère (minuscules, sans accents, ponctuation → espace) en **gardant l'alignement des index** avec le nom d'origine (sert au surlignage). `canon()` rend « saint »/« sainte » équivalents à « st »/« ste ». `APPS` construit les liens de navigation.
 - **État** : objet `state` unique (mode, recherche, position, favoris, récents, `pending`, `token`, statut de synchro…). Persistance via `store` (localStorage enveloppé dans try/catch).
-- **Rendu** : `render()` reconstruit la liste en HTML (A–Z groupé par lettre + « Récents », « Autour de moi » trié par distance, « Favoris »).
+- **Groupes** : `GROUPS` reprend le classement et les couleurs de l'ancienne carte Google « Centrales EDF » (UP → GEH, CNPE → paliers). `iconOf(p)` dessine l'icône SVG (turbine, tour de refroidissement ou flamme selon le type) à la couleur du GEH ; gris si la centrale n'a pas de groupe connu.
+- **Rendu** : `render()` reconstruit la liste en HTML (A–Z groupé par lettre + « Récents », « Autour de moi » trié par distance avec les icônes, « Favoris »). En « Autour de moi », `state.view` choisit Liste ou Carte.
+- **Carte « Autour de moi »** : module `NearMap` (Leaflet) : mêmes centrales que la liste (recherche comprise), repères `L.divIcon` avec `iconOf`, position, fond Plan / Satellite, toucher un repère → feuille de lancement. Module `Legend` : une case par UP (masquées : `state.hiddenUps`).
 - **Feuille de lancement** : boutons Waze / Google Maps / Plans ; l'appli préférée (dernière utilisée) passe en premier.
 - **Liste (base + modifications locales)** : `basePlants` = dernière liste partagée connue ; `plants` = `Sync.applyOps(basePlants, state.pending)`. `addPlant` / `removePlant` ajoutent une opération dans `state.pending` puis `changed()` → sauvegarde, rendu, `scheduleSync()`.
 - **Synchronisation** : `syncNow()` envoie les opérations en attente (si code d'édition) ou relit simplement la liste. Retire les opérations envoyées par identité d'objet. Déclenchée au lancement, au retour du réseau, au retour au premier plan (> 1 min), après chaque modification (délai 1,5 s).
@@ -49,7 +51,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 
 ### Données et identifiants
 
-- Format de `data/centrales.json` : **une centrale par ligne**, `{"n": "NOM", "lat": 45.1, "lon": 1.9}` + `"r": "La Réunion"|"Guyane"` facultatif + `"note": "Emplacement à confirmer"` facultatif (remarque affichée dans la liste et la fiche de navigation). `Sync.serialize()` et `tools/extract.py` produisent exactement ce format (diffs Git lisibles) — les garder identiques.
+- Format de `data/centrales.json` : **une centrale par ligne**, `{"n": "NOM", "lat": 45.1, "lon": 1.9}` + `"up": "UP Centre", "geh": "GEH Dordogne"` facultatifs (groupe : icône et couleur, voir `GROUPS`) + `"r": "La Réunion"|"Guyane"` facultatif + `"note": "Emplacement à confirmer"` facultatif (remarque affichée dans la liste et la fiche de navigation). `Sync.serialize()` écrit les champs dans cet ordre et garde à la fin les champs qu'il ne connaît pas ; `tools/extract.py` produit le même format (sans groupe) — garder les deux identiques (diffs Git lisibles).
 - Identifiant d'une centrale : `` `${n}|${lat}|${lon}` `` (`Sync.idOf`). Favoris, récents et suppressions s'appuient dessus : modifier le nom ou les coordonnées d'une centrale change son identifiant.
 - Plusieurs centrales peuvent avoir le même nom (ex. CASTILLON, REVIN) à des endroits différents.
 
@@ -91,5 +93,6 @@ Vérifier visuellement une modification d'interface : capture Playwright en `dev
 ## Idées non réalisées (pistes)
 
 - Export / sauvegarde des favoris.
+- Icônes de groupe aussi dans les listes A–Z et Favoris.
 - Modifier une centrale existante (aujourd'hui : supprimer puis ajouter).
-- Champ « type » (hydraulique, nucléaire…) pour filtrer la liste.
+- Filtrer la liste par UP / GEH.
