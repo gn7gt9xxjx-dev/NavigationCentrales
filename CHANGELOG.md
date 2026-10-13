@@ -2,6 +2,11 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.9.0
+- **Nouveautés** : juste après une mise à jour, une présentation pas à pas (illustrée) montre les nouvelles fonctions et comment s'en servir. Elle ne s'affiche qu'une fois ; « Passer » la ferme. Rien n'est affiché à la première installation.
+- Réglages → À propos → « Nouveautés de chaque version » : la liste des nouvelles fonctions par version ; toucher une ligne rouvre son explication.
+- Les fenêtres plus hautes que l'écran (Réglages sur un petit téléphone) défilent.
+
 ## 1.8.1
 - Couleurs des icônes identiques à l'ancienne carte « Centrales EDF » (relevées sur ses icônes), y compris CP2, N4, GEH Lot Truyère, GEH Ouest, GEH Inconnu et GEH Tarn Agout.
 

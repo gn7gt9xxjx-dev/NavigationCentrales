@@ -15,6 +15,7 @@ Ce fichier guide Claude Code (claude.ai/code) pour travailler dans ce dépôt.
 - **Aucune étape de build, aucun framework.** HTML/CSS/JS natifs servis tels quels. `package.json` ne sert qu'aux outils de dev (tests, icônes). Ne pas introduire de bundler, TypeScript ou dépendance runtime sans demande explicite.
 - **Tout doit marcher hors ligne** : toute ressource utilisée par l'appli est locale (polices dans `fonts/`, Leaflet dans `vendor/`) et listée dans `FILES` de `sw.js`. Seuls la carte (tuiles), la recherche de lieu (Nominatim) et la synchro GitHub nécessitent le réseau, avec un message clair quand il manque.
 - **Après toute modification de fichier servi (HTML, CSS, JS, icônes…), incrémenter `VERSION` dans `sw.js`** (format `AAAA-MM-JJ.n`). Incrémenter aussi `APP_VERSION` (app.js, affiché dans Réglages → À propos, format `x.y.z`) et ajouter une ligne dans `CHANGELOG.md`. Sinon les téléphones gardent l'ancienne version en cache. Ajouter tout nouveau fichier à `FILES`.
+- **Nouvelle fonction visible par l'utilisateur → ajouter une entrée en tête de `NEWS` (app.js)** avec le numéro de la version, un titre, une phrase et les étapes pour s'en servir (+ une illustration dans `NEWS_ART` si utile). Elle sera présentée une fois après la mise à jour. Les corrections et changements techniques n'y vont pas (seulement dans `CHANGELOG.md`).
 - La liste partagée vit dans le dépôt séparé **DataNavigationCentrales** (`data/centrales.json`) : pas de changement de `VERSION` pour la modifier, l'appli la relit à chaque lancement. La copie `data/centrales.json` d'ici n'est qu'un secours embarqué : inutile de la tenir à jour.
 - Interface : phrases courtes, à la casse normale (pas de MAJUSCULES pour les libellés), cibles tactiles ≥ 44 px, clair/sombre via `prefers-color-scheme`, `prefers-reduced-motion` respecté.
 
@@ -22,7 +23,7 @@ Ce fichier guide Claude Code (claude.ai/code) pour travailler dans ce dépôt.
 
 ```
 index.html            structure : en-tête, liste, feuille de lancement (#sheet), confirmation (#confirm),
-                      écran d'ajout (#editor), réglages (#settings), toast
+                      écran d'ajout (#editor), réglages (#settings), nouveautés (#news, #newsAll), toast
 styles.css            tokens de couleur dans :root (+ variante sombre), police Barlow Semi Condensed
 app.js                toute la logique de l'interface (voir sections ci-dessous)
 sync.js               module Sync : lecture/écriture de data/centrales.json sur GitHub
@@ -47,6 +48,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 - **Liste (base + modifications locales)** : `basePlants` = dernière liste partagée connue ; `plants` = `Sync.applyOps(basePlants, state.pending)`. `addPlant` / `removePlant` ajoutent une opération dans `state.pending` puis `changed()` → sauvegarde, rendu, `scheduleSync()`.
 - **Synchronisation** : `syncNow()` envoie les opérations en attente (si code d'édition) ou relit simplement la liste. Retire les opérations envoyées par identité d'objet. Déclenchée au lancement, au retour du réseau, au retour au premier plan (> 1 min), après chaque modification (délai 1,5 s).
 - **Réglages** : code d'édition (vérifié par une lecture API), prénom (apparaît dans les commits), mise à jour manuelle, lien vers la page « Contrôle des positions GPS » (artifact claude.ai, visible seulement avec le code d'édition).
+- **Nouveautés** : `NEWS` (fonctions nouvelles par version, la plus récente en tête) et `NEWS_ART` (maquettes HTML/CSS animées, figées si `prefers-reduced-motion`). Module `News` : au lancement, `maybeShow()` présente une fois les entrées plus récentes que `newsSeen` (localStorage), en fiches à faire défiler (« Suivant », balayage) ; rien à la première installation ; sans `newsSeen` mais avec des données sur le téléphone (version antérieure à cet écran) → depuis la 1.6. `openAll()` : liste par version (Réglages → À propos).
 - **Ajout d'une centrale** : module `Editor` ; Leaflet chargé à la demande depuis `vendor/`, fonds OSM / Esri satellite, recherche Nominatim, `parseCoords()` accepte décimal, virgule décimale, DMS et liens Google Maps/Waze. Alerte si une centrale existe à < 1 km.
 
 ### Données et identifiants

@@ -964,6 +964,7 @@ function bind() {
   $("#setClose").addEventListener("click", () => settingsDlg.close());
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
   $("#setSyncNow").addEventListener("click", syncNow);
+  $("#setNews").addEventListener("click", () => News.openAll());
   $("#setTokenGo").addEventListener("click", activateToken);
   $("#setToken").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); activateToken(); } });
   $("#setAuthor").addEventListener("change", () => { state.author = $("#setAuthor").value.trim(); store.set("author", state.author); });
@@ -1207,7 +1208,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.9.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1218,12 +1219,198 @@ async function renderVersion() {
   $("#setVersion").textContent = `Version ${APP_VERSION}${cache}`;
 }
 
+const cmpVersion = (a, b) => {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+  return 0;
+};
+
+/* ===================== Nouveautés ===================== */
+
+// Les fonctions nouvelles de chaque version et comment s'en servir (pas les corrections :
+// elles restent dans CHANGELOG.md). Présentées une fois, juste après la mise à jour, puis
+// retrouvables dans Réglages → À propos. Ajouter une entrée (la plus récente en tête)
+// quand une version apporte quelque chose que l'utilisateur doit savoir utiliser.
+// `art` : illustration dessinée par NEWS_ART.
+const NEWS = [
+  { v: "1.8.0", date: "13 octobre 2026", items: [
+    { art: "map", title: "La carte autour de vous",
+      text: "Les centrales proches de vous, sur une carte, avec votre position.",
+      steps: [
+        "Touchez « Autour de moi », puis « Carte ».",
+        "Touchez une icône pour lancer la navigation vers cette centrale.",
+        "« Légende » : masquez les UP qui ne vous concernent pas.",
+        "« Satellite » montre le terrain ; la flèche en bas vous recentre.",
+      ],
+      note: "Sans réseau, le fond de carte manque mais les centrales restent affichées." },
+    { art: "icons", title: "Une icône pour chaque centrale",
+      text: "Comme sur l'ancienne carte « Centrales EDF » : la forme indique le type, la couleur le GEH (ou le palier des CNPE).",
+      steps: [
+        "Visible dans « Autour de moi », en liste et sur la carte.",
+        "Le détail des couleurs est dans « Légende », sur la carte.",
+      ] },
+  ] },
+  { v: "1.7.0", date: "12 octobre 2026", items: [
+    { art: "swipe", title: "Balayer une centrale récente",
+      text: "Les « Récents » sont en haut de la liste A–Z.",
+      steps: [
+        "Balayez une ligne vers la gauche, à moitié : boutons « Favori » et « Supprimer ».",
+        "Balayez-la à fond : elle quitte les récents (elle reste dans les favoris).",
+        "Une erreur ? Touchez « Annuler » dans le message en bas.",
+      ] },
+  ] },
+  { v: "1.6.0", date: "10 octobre 2026", items: [
+    { art: "note", title: "Remarque sur une centrale",
+      text: "Quand une position reste à vérifier, une remarque comme « Emplacement à confirmer » s'affiche dans la liste et sur la fiche de navigation." },
+  ] },
+  { v: "1.4.0", date: "5 octobre 2026", items: [
+    { art: "update", title: "Mise à jour en un geste",
+      text: "Quand une nouvelle version est prête, un bandeau bleu s'affiche en haut de la liste.",
+      steps: [
+        "Touchez « Mettre à jour » : plus besoin de réinstaller l'appli.",
+        "Pour vérifier vous-même : Réglages → « Rechercher une mise à jour ».",
+      ] },
+  ] },
+  { v: "1.0.0", date: "4 octobre 2026", items: [
+    { art: "apps", title: "Lancer la navigation, même sans réseau",
+      text: "Touchez une centrale, puis Waze, Google Maps ou Plans (sur iPhone).",
+      steps: [
+        "L'appli utilisée la dernière fois passe en premier.",
+        "L'étoile ajoute la centrale aux « Favoris ».",
+        "La recherche accepte « st » pour « saint » et ignore les accents.",
+      ] },
+  ] },
+];
+
+// Illustrations : de petites maquettes de l'interface, animées si le téléphone le permet.
+const NEWS_ART = {
+  swipe: () => `<p class="art-label">Récents</p><div class="art-card">
+      <div class="art-swipe"><div class="art-actions">
+        <span class="swipe-fav">${ICON_STAR_BIG}Favori</span><span class="swipe-del">${ICON_TRASH}Supprimer</span>
+      </div><div class="art-row"><span><b>VILLEFRANCHE DE CONFLENT</b><small>12 km SE</small></span></div>
+      <span class="art-finger"></span></div>
+      <div class="art-row"><span><b>CHEYLAS</b><small>18 km NE</small></span></div>
+    </div>`,
+  map: () => {
+    const at = (x, y, up, geh, type, tap = "") =>
+      `<span class="art-pin${tap}" style="left:${x}%;top:${y}%">${plantIcon(type || "hydro", GROUP_COLOR.get(`${up}|${geh}`))}</span>`;
+    return `<div class="art-views"><span>Liste</span><span class="on">Carte</span></div>
+      <div class="art-map">
+        <svg class="art-terrain" viewBox="0 0 300 120" preserveAspectRatio="none"><path class="river" d="M-5 92C60 70 80 104 140 80S230 30 305 44"/><path class="road" d="M30 -5 70 125M190 -5 250 125"/></svg>
+        ${at(56, 26, "UP Alpes", "GEH Savoie Mont Blanc")}${at(48, 68, "UP Alpes", "GEH Ecrins Vercors", "", " tap")}
+        ${at(82, 30, "CNPE", "CP1", "nucleaire")}${at(86, 74, "UP Alpes", "GEH Vallée de la Maurienne")}
+        <span class="art-me" style="left:24%;top:62%"></span>
+        <span class="art-chip">Légende</span>
+      </div>`;
+  },
+  icons: () => {
+    const fig = (type, color, label) => `<span class="art-fig">${plantIcon(type, COLOR[color])}<small>${label}</small></span>`;
+    return `<div class="art-icons">${fig("hydro", "bleu", "Hydraulique")}${fig("nucleaire", "rouge", "Nucléaire")}${fig("thermique", "brun", "Thermique")}${fig("site", "violet", "Site EDF")}</div>
+      <div class="art-colors">${["bleu", "orange", "noir", "vert", "violet", "orangeClair"].map((c) => plantIcon("hydro", COLOR[c])).join("")}</div>`;
+  },
+  note: () => `<div class="art-card"><div class="art-row"><span><b>GRAND'MAISON</b><small>12 km SE <em>Emplacement à confirmer</em></small></span></div></div>
+    <p class="art-sheetnote">Emplacement à confirmer</p>`,
+  update: () => `<div class="art-banner"><span>Une nouvelle version est disponible.</span><span class="art-btn">Mettre à jour</span></div>`,
+  apps: () => `<div class="art-apps"><span class="app-waze">Waze</span><span class="app-gmaps">Google Maps</span>${isApple ? '<span class="app-plans">Plans</span>' : ""}</div>`,
+};
+
+// Espaces insécables de la typographie française : « mot », avant : ? !
+const nbsp = (s) => s.replace(/« /g, "«\u00a0").replace(/ ([»:?!])/g, "\u00a0$1");
+
+const News = (() => {
+  const dlg = $("#news"), all = $("#newsAll");
+  let cards = [], index = 0, afterUpdate = false;
+
+  function show() {
+    const c = cards[index], last = index === cards.length - 1;
+    $("#newsKicker").textContent = `${afterUpdate ? "Nouveau · " : ""}version ${c.v}`;
+    $("#newsArt").innerHTML = NEWS_ART[c.art]?.() || "";
+    $("#newsArt").className = `news-art is-${c.art}`;
+    $("#newsTitle").textContent = c.title;
+    $("#newsText").textContent = nbsp([c.text, c.note].filter(Boolean).join(" "));
+    $("#newsSteps").innerHTML = (c.steps || []).map((s) => `<li>${escapeHtml(nbsp(s))}</li>`).join("");
+    $("#newsSteps").hidden = !c.steps;
+    $("#newsWhere").hidden = !(afterUpdate && last);
+    $("#newsSkip").hidden = last;
+    $("#newsPrev").style.visibility = index ? "visible" : "hidden";
+    $("#newsDots").style.visibility = cards.length < 2 ? "hidden" : "visible";
+    $("#newsDots").setAttribute("aria-label", `Page ${index + 1} sur ${cards.length}`);
+    $("#newsDots").innerHTML = cards.map((_, i) => `<span${i === index ? ' class="on"' : ""}></span>`).join("");
+    $("#newsNext").textContent = last ? "Compris" : "Suivant";
+    dlg.querySelector(".sheet-body").scrollTop = 0;
+  }
+
+  function open(list, start = 0, fromUpdate = false) {
+    cards = list; index = start; afterUpdate = fromUpdate;
+    show();
+    if (!dlg.open) dlg.showModal();
+  }
+  function go(step) {
+    const i = index + step;
+    if (i < 0) return;
+    if (i >= cards.length) return dlg.close();
+    index = i;
+    show();
+  }
+
+  // Nouveautés des versions plus récentes que `v`, de la plus ancienne à la plus récente.
+  const since = (v) => NEWS.filter((e) => cmpVersion(e.v, v) > 0).reverse()
+    .flatMap((e) => e.items.map((it) => ({ ...it, v: e.v })));
+
+  // Au lancement : présente une seule fois ce qui est arrivé depuis la dernière version vue.
+  // Première installation : rien à présenter. Utilisateur d'une version antérieure à cet
+  // écran (aucune version vue mais des données sur le téléphone) : depuis la 1.6.
+  function maybeShow(returning) {
+    const seen = store.get("newsSeen", "") || (returning ? "1.6.0" : APP_VERSION);
+    store.set("newsSeen", APP_VERSION);
+    const list = since(seen);
+    if (list.length && !document.querySelector("dialog[open]")) open(list, 0, true);
+  }
+
+  function openAll() {
+    $("#newsAllBody").innerHTML = NEWS.map((e, ei) => `<section class="nw">
+      <h3>Version ${e.v} <small>${e.date}</small></h3>
+      ${e.items.map((it, i) => `<button type="button" class="nw-item" data-e="${ei}" data-i="${i}">
+        <span><b>${escapeHtml(it.title)}</b><small>${escapeHtml(nbsp(it.text))}</small></span>${ICON_CHEV}</button>`).join("")}
+    </section>`).join("");
+    all.showModal();
+  }
+
+  $("#newsNext").addEventListener("click", () => go(1));
+  $("#newsPrev").addEventListener("click", () => go(-1));
+  $("#newsSkip").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  // Balayer la fiche vers la gauche ou la droite : page suivante ou précédente
+  let startX = null, startY = 0;
+  dlg.addEventListener("pointerdown", (e) => { startX = e.clientX; startY = e.clientY; });
+  dlg.addEventListener("pointercancel", () => { startX = null; });
+  dlg.addEventListener("pointerup", (e) => {
+    if (startX === null) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    startX = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) go(dx < 0 ? 1 : -1);
+  });
+
+  $("#newsAllClose").addEventListener("click", () => all.close());
+  all.addEventListener("click", (e) => {
+    if (e.target === all) return all.close();
+    const b = e.target.closest(".nw-item");
+    if (!b) return;
+    const entry = NEWS[b.dataset.e];
+    open(entry.items.map((it) => ({ ...it, v: entry.v })), Number(b.dataset.i));
+  });
+
+  return { maybeShow, openAll };
+})();
+
 /* ===================== Démarrage ===================== */
 
 async function init() {
   // Demande un stockage « persistant » : sans cela, le navigateur peut vider le localStorage
   // (code d'édition, favoris, liste) quand le téléphone manque de place.
   try { navigator.storage?.persist?.().catch(() => {}); } catch { /* non pris en charge */ }
+  // Des données déjà enregistrées : l'appli a été utilisée avant cette version (voir Nouveautés).
+  const returning = ["list", "recents", "favs", "token"].some((k) => store.get(k, null) !== null);
   bind();
   renderFavCount();
   renderVersion();
@@ -1240,6 +1427,7 @@ async function init() {
   render();
   renderStatus();
   syncNow();
+  News.maybeShow(returning);
 
   // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation)
   if (isApple && !isStandalone) $("#install").hidden = false;
