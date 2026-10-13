@@ -97,14 +97,15 @@ const tileLayers = (L) => ({
 // Même classement et mêmes couleurs que l'ancienne carte Google « Centrales EDF » :
 // une UP (ou CNPE, SEI / PEI…) regroupe des GEH (ou paliers), chacun avec sa couleur.
 // Chaque centrale porte `up` et `geh` dans la liste partagée ; sans eux elle est grise.
+// Couleurs relevées sur les icônes de l'ancienne carte.
 const COLOR = {
-  bleu: "#1F6FD1", orange: "#F4511E", noir: "#222222", vert: "#43A047", violet: "#8E24AA",
-  jaune: "#FBD000", rouge: "#E53935", lime: "#B5C200", ambre: "#FB8C00", turquoise: "#00897B", brun: "#6D4C41",
+  bleu: "#0058B8", orange: "#FC5814", orangeClair: "#FCA03C", noir: "#222222", vert: "#509C2C",
+  violet: "#9014FC", jaune: "#FCF014", rouge: "#FC1414", lime: "#C4D400", brun: "#6D4C41",
 };
 const GREY = "#8C98A5";
 const GROUPS = [
-  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "ambre"], ["N4", "turquoise"]] },
-  { up: "UP Centre", geh: [["GEH Dordogne", "bleu"], ["GEH Loire-Ardèche", "orange"], ["GEH Limoges", "noir"], ["GEH BERGERAC", "vert"], ["GEH Lot Truyère", "ambre"], ["GEH Ouest", "violet"], ["GEH Inconnu", "jaune"]] },
+  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "orangeClair"], ["N4", "bleu"]] },
+  { up: "UP Centre", geh: [["GEH Dordogne", "bleu"], ["GEH Loire-Ardèche", "orange"], ["GEH Limoges", "noir"], ["GEH BERGERAC", "vert"], ["GEH Lot Truyère", "orangeClair"], ["GEH Ouest", "violet"], ["GEH Inconnu", "jaune"]] },
   { up: "UP Méditerranée", geh: [["GEH Durance", "violet"], ["GEH Var Roya", "bleu"]] },
   { up: "UP Sud-Ouest", geh: [["GEH Inconnu", "jaune"], ["GEH Adour et Gaves", "bleu"], ["GEH Aude Ariège", "orange"], ["GEH Garonne", "noir"], ["GEH Tarn Agout", "violet"]] },
   { up: "SEI / PEI", geh: [["SEI", "bleu"], ["PEI", "orange"]] },
@@ -1206,7 +1207,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.8.1";
 
 async function renderVersion() {
   let cache = "";

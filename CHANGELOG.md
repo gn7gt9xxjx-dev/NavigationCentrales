@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.8.1
+- Couleurs des icônes identiques à l'ancienne carte « Centrales EDF » (relevées sur ses icônes), y compris CP2, N4, GEH Lot Truyère, GEH Ouest, GEH Inconnu et GEH Tarn Agout.
+
 ## 1.8.0
 - « Autour de moi » : choix **Liste** ou **Carte**. La carte montre les mêmes centrales que la liste (recherche comprise), à leurs coordonnées GPS ; toucher une centrale ouvre la fiche de navigation. Fond Plan ou Satellite, bouton pour se recentrer, noms affichés en zoomant. Sans réseau, le fond de carte manque mais les centrales et la position restent affichées.
 - Icônes colorées comme sur l'ancienne carte Google « Centrales EDF » : turbine pour l'hydraulique, tour de refroidissement pour les CNPE, flamme pour le thermique, couleur du GEH (ou du palier). Dans la liste « Autour de moi » et sur la carte.
