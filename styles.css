@@ -299,6 +299,9 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
 .toast.show { pointer-events: auto; }
 .toast { max-width: calc(100% - 32px); }
 #toastMsg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Sans bouton, un message long passe sur deux lignes au lieu d'être coupé */
+.toast:has(#toastAction[hidden]) { width: max-content; }
+.toast:has(#toastAction[hidden]) #toastMsg { white-space: normal; text-align: center; line-height: 1.3; }
 #toastAction { color: #8DB4FF; font-weight: 700; padding: 2px 0; flex: none; }
 @media (prefers-color-scheme: dark) { #toastAction { color: #1E4C9A; } }
 
@@ -623,6 +626,12 @@ body.map-view #install { display: none; }
   padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--sign); color: var(--sign-ink); font-size: .9375rem;
 }
 .art-btn { padding: 9px 12px; border-radius: 9px; background: var(--sign-ink); color: var(--sign); font-weight: 700; white-space: nowrap; }
+.art-file { gap: 12px; }
+.art-file b { font-size: .9375rem; overflow-wrap: anywhere; }
+.art-doc { width: 30px; height: 36px; flex: none; }
+.art-doc .doc { fill: var(--bg); stroke: var(--muted); stroke-width: 1.6; stroke-linejoin: round; }
+.art-doc .fold { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linejoin: round; }
+.art-doc .st { fill: var(--star); }
 .art-apps { display: grid; gap: 8px; }
 .art-apps span { display: grid; place-items: center; height: 40px; border-radius: 10px; font-weight: 700; font-size: 1rem; }
 
@@ -638,3 +647,9 @@ body.map-view #install { display: none; }
 .nw-item b { display: block; font-size: 1.0625rem; font-weight: 600; }
 .nw-item small { margin-top: 2px; line-height: 1.3; }
 @media (prefers-reduced-motion: reduce) { .art-pin.tap::after { animation: none; } }
+
+/* ---------- Fichier de favoris ---------- */
+.fav-actions { display: grid; gap: 10px; margin: 12px 0; }
+.btn-primary.wide { width: 100%; }
+.fav-help { margin-top: 16px; font-size: 1rem; color: var(--muted); }
+body.map-view #favBackup { display: none; }

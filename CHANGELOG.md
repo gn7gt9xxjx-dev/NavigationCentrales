@@ -2,6 +2,13 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.0
+- **Fichier de favoris** : les favoris peuvent être enregistrés dans un fichier `NavigationCentrales-favoris.json` (iPhone : menu Partager → « Enregistrer dans Fichiers », de préférence dans iCloud Drive, dossier « NavigationCentrales » ; Android : Téléchargements) et rechargés après une réinstallation ou sur un nouveau téléphone. Les favoris du fichier s'ajoutent à ceux du téléphone.
+- Au premier lancement (installation, ou mise à jour depuis une version précédente) : « Oui, charger mon fichier » / « Non, créer le fichier » / « Plus tard ». La question n'est posée qu'une fois ; « Plus tard » rappelle qu'on peut le faire dans Réglages → Favoris. Pas dans Safari sur iPhone, seulement dans l'appli installée.
+- Après l'ajout ou le retrait d'un favori : bouton « Enregistrer » dans le message, et bandeau « Le fichier de favoris n'est plus à jour » tant qu'il ne l'est pas.
+- Réglages → Favoris : état du fichier, « Enregistrer le fichier de favoris », « Charger un fichier de favoris ».
+- Une appli web ne peut pas créer seule de dossier (avec son icône) dans Fichiers, ni lire ou écrire un fichier sans que l'utilisateur le choisisse : c'est réservé aux applis de l'App Store / du Play Store.
+
 ## 1.9.0
 - **Nouveautés** : juste après une mise à jour, une présentation pas à pas (illustrée) montre les nouvelles fonctions et comment s'en servir. Elle ne s'affiche qu'une fois ; « Passer » la ferme. Rien n'est affiché à la première installation.
 - Réglages → À propos → « Nouveautés de chaque version » : la liste des nouvelles fonctions par version ; toucher une ligne rouvre son explication.

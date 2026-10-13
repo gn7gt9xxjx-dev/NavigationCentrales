@@ -23,7 +23,8 @@ Ce fichier guide Claude Code (claude.ai/code) pour travailler dans ce dépôt.
 
 ```
 index.html            structure : en-tête, liste, feuille de lancement (#sheet), confirmation (#confirm),
-                      écran d'ajout (#editor), réglages (#settings), nouveautés (#news, #newsAll), toast
+                      écran d'ajout (#editor), réglages (#settings), nouveautés (#news, #newsAll),
+                      fichier de favoris (#favFile, #favBackup), toast
 styles.css            tokens de couleur dans :root (+ variante sombre), police Barlow Semi Condensed
 app.js                toute la logique de l'interface (voir sections ci-dessous)
 sync.js               module Sync : lecture/écriture de data/centrales.json sur GitHub
@@ -49,6 +50,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 - **Synchronisation** : `syncNow()` envoie les opérations en attente (si code d'édition) ou relit simplement la liste. Retire les opérations envoyées par identité d'objet. Déclenchée au lancement, au retour du réseau, au retour au premier plan (> 1 min), après chaque modification (délai 1,5 s).
 - **Réglages** : code d'édition (vérifié par une lecture API), prénom (apparaît dans les commits), mise à jour manuelle, lien vers la page « Contrôle des positions GPS » (artifact claude.ai, visible seulement avec le code d'édition).
 - **Nouveautés** : `NEWS` (fonctions nouvelles par version, la plus récente en tête) et `NEWS_ART` (maquettes HTML/CSS animées, figées si `prefers-reduced-motion`). Module `News` : au lancement, `maybeShow()` présente une fois les entrées plus récentes que `newsSeen` (localStorage), en fiches à faire défiler (« Suivant », balayage) ; rien à la première installation ; sans `newsSeen` mais avec des données sur le téléphone (version antérieure à cet écran) → depuis la 1.6. `openAll()` : liste par version (Réglages → À propos).
+- **Fichier de favoris** : module `FavFile`. Les favoris (localStorage, perdus si on supprime l'appli) sont aussi enregistrés dans `NavigationCentrales-favoris.json` (une centrale par ligne `{n, lat, lon}`) que l'utilisateur range lui-même : iPhone → `navigator.share` (« Enregistrer dans Fichiers »), sinon téléchargement ; rechargement par `<input type="file">` (les favoris s'ajoutent). Une PWA ne peut ni créer de dossier ni lire/écrire un fichier sans geste de l'utilisateur : `save()` doit être appelé directement depuis un toucher. `favFile` (localStorage) = favoris du dernier fichier. `maybeAsk()` propose de charger ou créer **une seule fois** au premier lancement (`favFileAsked`, après les nouveautés, pas dans Safari sur iPhone) ; ensuite seulement Réglages → Favoris. Différent des favoris actuels → bandeau `#favBackup` et bouton « Enregistrer » dans le message.
 - **Ajout d'une centrale** : module `Editor` ; Leaflet chargé à la demande depuis `vendor/`, fonds OSM / Esri satellite, recherche Nominatim, `parseCoords()` accepte décimal, virgule décimale, DMS et liens Google Maps/Waze. Alerte si une centrale existe à < 1 km.
 
 ### Données et identifiants
@@ -94,7 +96,6 @@ Vérifier visuellement une modification d'interface : capture Playwright en `dev
 
 ## Idées non réalisées (pistes)
 
-- Export / sauvegarde des favoris.
 - Icônes de groupe aussi dans les listes A–Z et Favoris.
 - Modifier une centrale existante (aujourd'hui : supprimer puis ajouter).
 - Filtrer la liste par UP / GEH.

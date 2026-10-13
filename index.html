@@ -68,6 +68,10 @@
       <span>Ajouter l'appli à l'écran d'accueil.</span>
       <button type="button" id="installGo">Installer</button>
     </div>
+    <div class="update" id="favBackup" hidden>
+      <span>Le fichier de favoris n'est plus à jour.</span>
+      <button type="button" id="favBackupGo">Enregistrer</button>
+    </div>
     <ul class="list" id="list"></ul>
     <p class="empty" id="empty" hidden></p>
 
@@ -210,6 +214,24 @@
     </div>
   </dialog>
 
+  <!-- Fichier de favoris : charger un fichier existant ou en créer un (voir FavFile dans app.js) -->
+  <dialog class="sheet" id="favFile" aria-labelledby="favFileTitle">
+    <div class="sheet-body settings">
+      <div class="sheet-head">
+        <h2 id="favFileTitle">Sauvegarde des favoris</h2>
+        <button type="button" class="link" id="favFileLater">Plus tard</button>
+      </div>
+      <p>Vos favoris sont gardés dans un fichier. Après une réinstallation ou sur un nouveau téléphone, rechargez-le pour les retrouver.</p>
+      <p><strong>Avez-vous déjà un fichier de favoris ?</strong></p>
+      <div class="fav-actions">
+        <button type="button" class="btn-primary wide" id="favFileLoad">Oui, charger mon fichier</button>
+        <button type="button" class="btn-plain wide" id="favFileCreate">Non, créer le fichier</button>
+      </div>
+      <ol class="steps fav-help" id="favFileHelp"></ol>
+    </div>
+  </dialog>
+  <input type="file" id="favFileInput" accept=".json,application/json" hidden>
+
   <!-- Nouveautés : présentation pas à pas (après une mise à jour, ou depuis la liste ci-dessous) -->
   <dialog class="sheet" id="news" aria-labelledby="newsTitle">
     <div class="sheet-body news" tabindex="-1" autofocus>
@@ -255,6 +277,15 @@
         <p id="setSyncInfo"></p>
         <p class="set-error" id="setSyncError" hidden></p>
         <button type="button" class="btn-plain wide" id="setSyncNow">Mettre à jour maintenant</button>
+      </section>
+
+      <section>
+        <h3>Favoris</h3>
+        <p id="setFavInfo"></p>
+        <div class="fav-actions">
+          <button type="button" class="btn-plain wide" id="setFavSave">Enregistrer le fichier de favoris</button>
+          <button type="button" class="btn-plain wide" id="setFavLoad">Charger un fichier de favoris</button>
+        </div>
       </section>
 
       <section id="setEditOff">
