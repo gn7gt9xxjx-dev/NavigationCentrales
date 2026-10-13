@@ -60,7 +60,8 @@ try {
   assert.equal(await status(A), "À jour");
   assert.equal(await A.isVisible("#add"), false);
   assert.equal(await A.isVisible("#news"), false);
-  ok("lecteur : liste à jour, pas de bouton +, pas de nouveautés à la première installation");
+  assert.equal(await A.isVisible("#favFile"), false);   // Safari sur iPhone : seulement dans l'appli installée
+  ok("lecteur : liste à jour, pas de bouton +, pas de nouveautés à la première installation, pas de question sur les favoris dans Safari");
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
   ok("recherche « st lau » → CNPE St Laurent");
@@ -112,6 +113,8 @@ try {
 
   // Autre téléphone
   const { page: B } = await phone("Pixel 7");
+  assert.equal(await B.isVisible("#favFile"), true);
+  await B.click("#favFileLater"); await B.waitForTimeout(200);
   await B.fill("#q", "test ajout"); await B.waitForTimeout(200);
   assert.deepEqual(await names(B), ["TEST AJOUT"]);
   await B.click(".row"); await B.waitForTimeout(300);
@@ -248,7 +251,58 @@ try {
   await C.click("#newsAllClose"); await C.click("#setClose");
   ok("réglages → « Nouveautés de chaque version » : liste par version, toucher ouvre l'explication");
 
-  const errors = [...A.errors, ...B.errors, ...C.errors];
+  // Fichier de favoris : création (Android : téléchargement), mise à jour, rechargement après réinstallation
+  const { ctx: ctxD, page: D } = await phone("Pixel 7");
+  assert.equal(await D.isVisible("#favFile"), true);
+  let [dl] = await Promise.all([D.waitForEvent("download"), D.click("#favFileCreate")]);
+  assert.equal(dl.suggestedFilename(), "NavigationCentrales-favoris.json");
+  assert.deepEqual(JSON.parse(readFileSync(await dl.path(), "utf8")).favoris, []);
+  assert.equal(await D.isVisible("#favFile"), false);
+  assert.equal(await D.isVisible("#favBackup"), false);
+  await D.reload(); await D.waitForSelector(".row"); await D.waitForTimeout(500);
+  assert.equal(await D.isVisible("#favFile"), false);
+  ok("favoris : « Non, créer le fichier » le télécharge, la question n'est plus posée");
+  const favIds = await D.evaluate(() => plants.slice(0, 2).map((p) => p.id));
+  for (const id of favIds) {
+    await D.click(`.row[data-id="${id}"]`); await D.waitForTimeout(300);
+    await D.click("#sheetStar"); await D.waitForTimeout(200);
+    assert.equal(await D.textContent("#toastAction"), "Enregistrer");
+    await D.click("#close"); await D.waitForTimeout(200);
+  }
+  assert.equal(await D.isVisible("#favBackup"), true);
+  [dl] = await Promise.all([D.waitForEvent("download"), D.click("#favBackupGo")]);
+  const favFile = readFileSync(await dl.path());
+  const fileIds = JSON.parse(favFile.toString("utf8")).favoris.map((f) => `${f.n}|${f.lat}|${f.lon}`);
+  assert.deepEqual(fileIds, favIds);
+  assert.equal(await D.isVisible("#favBackup"), false);
+  ok("favoris : après un ajout, bandeau « n'est plus à jour » ; « Enregistrer » télécharge le fichier à jour");
+  await ctxD.close();
+
+  const { page: E } = await phone("Pixel 7");
+  assert.equal(await E.isVisible("#favFile"), true);
+  let [chooser] = await Promise.all([E.waitForEvent("filechooser"), E.click("#favFileLoad")]);
+  await chooser.setFiles({ name: "NavigationCentrales-favoris.json", mimeType: "application/json", buffer: favFile });
+  await E.waitForTimeout(300);
+  assert.equal(await E.isVisible("#favFile"), false);
+  assert.equal(await E.textContent("#favCount"), "2");
+  assert.deepEqual(await E.evaluate(() => JSON.parse(localStorage.getItem("favs"))), favIds);
+  assert.equal(await E.isVisible("#favBackup"), false);
+  await E.click('[data-mode="fav"]'); await E.waitForTimeout(200);
+  assert.equal((await E.$$(".row")).length, 2);
+  await E.reload(); await E.waitForSelector(".row"); await E.waitForTimeout(500);
+  assert.equal(await E.isVisible("#favFile"), false);
+  ok("favoris : réinstallation → « Oui, charger mon fichier » retrouve les favoris");
+  await E.click("#openSettings");
+  assert.match(await E.textContent("#setFavInfo"), /^2 favoris\. Fichier à jour/);
+  [chooser] = await Promise.all([E.waitForEvent("filechooser"), E.click("#setFavLoad")]);
+  await chooser.setFiles({ name: "autre.json", mimeType: "application/json", buffer: Buffer.from("pas du json") });
+  await E.waitForTimeout(300);
+  assert.equal(await E.textContent("#toastMsg"), "Ce fichier ne contient pas de favoris");
+  assert.equal(await E.textContent("#favCount"), "2");
+  await E.click("#setClose");
+  ok("réglages → Favoris : état du fichier ; un fichier invalide est refusé sans rien changer");
+
+  const errors = [...A.errors, ...B.errors, ...C.errors, ...D.errors, ...E.errors];
   assert.deepEqual(errors, []);
   ok("aucune erreur JavaScript");
   console.log("\nTous les tests passent.");

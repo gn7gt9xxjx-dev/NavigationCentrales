@@ -302,6 +302,7 @@ function render() {
 
 function renderFavCount() {
   $("#favCount").textContent = state.favs.size ? state.favs.size : "";
+  $("#favBackup").hidden = !FavFile.dirty();
 }
 
 /* ===================== Position ===================== */
@@ -374,16 +375,18 @@ function toggleFav(id) {
   store.set("favs", [...state.favs]);
   const fav = state.favs.has(id);
   renderFavCount();
-  toast(fav ? "Ajoutée aux favoris" : "Retirée des favoris");
+  // Fichier de favoris en place : on propose de le mettre à jour tout de suite
+  toast(fav ? "Ajoutée aux favoris" : "Retirée des favoris", FavFile.dirty() ? FavFile.save : null, "Enregistrer");
   return fav;
 }
 
 let toastTimer, toastUndo = null;
-function toast(msg, undo = null) {
+function toast(msg, undo = null, label = "Annuler") {
   const t = $("#toast");
   $("#toastMsg").textContent = msg;
   toastUndo = undo;
   $("#toastAction").hidden = !undo;
+  $("#toastAction").textContent = label;
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.classList.remove("show"); toastUndo = null; }, undo ? 5000 : 1800);
@@ -716,6 +719,7 @@ function renderSettings() {
     err.hidden = false;
     err.textContent = "Des modifications attendent un code d'édition pour être envoyées.";
   }
+  $("#setFavInfo").textContent = FavFile.info();
 }
 
 function openSettings() {
@@ -965,6 +969,9 @@ function bind() {
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
   $("#setSyncNow").addEventListener("click", syncNow);
   $("#setNews").addEventListener("click", () => News.openAll());
+  $("#setFavSave").addEventListener("click", () => FavFile.save());
+  $("#setFavLoad").addEventListener("click", () => FavFile.pick());
+  $("#favBackupGo").addEventListener("click", () => FavFile.save());
   $("#setTokenGo").addEventListener("click", activateToken);
   $("#setToken").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); activateToken(); } });
   $("#setAuthor").addEventListener("change", () => { state.author = $("#setAuthor").value.trim(); store.set("author", state.author); });
@@ -1208,7 +1215,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.10.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1233,6 +1240,17 @@ const cmpVersion = (a, b) => {
 // quand une version apporte quelque chose que l'utilisateur doit savoir utiliser.
 // `art` : illustration dessinée par NEWS_ART.
 const NEWS = [
+  { v: "1.10.0", date: "13 octobre 2026", items: [
+    { art: "favfile", title: "Vos favoris gardés dans un fichier",
+      text: "Après une réinstallation ou sur un nouveau téléphone, rechargez ce fichier pour retrouver vos favoris.",
+      steps: [
+        "Au lancement, choisissez « Charger mon fichier » ou « Créer le fichier ».",
+        isApple ? "Pour le créer : « Enregistrer dans Fichiers », dans iCloud Drive, dossier « NavigationCentrales »."
+                : "Le fichier est enregistré dans « Téléchargements ».",
+        "Après avoir ajouté ou retiré un favori, touchez « Enregistrer » pour le mettre à jour.",
+        "Tout se retrouve dans Réglages, rubrique « Favoris ».",
+      ] },
+  ] },
   { v: "1.8.0", date: "13 octobre 2026", items: [
     { art: "map", title: "La carte autour de vous",
       text: "Les centrales proches de vous, sur une carte, avec votre position.",
@@ -1282,6 +1300,8 @@ const NEWS = [
   ] },
 ];
 
+const ICON_FAVFILE = '<svg class="art-doc" viewBox="0 0 30 36" aria-hidden="true"><path d="M3 3h16l8 8v22H3z" class="doc"/><path d="M19 3v8h8" class="fold"/><path d="m15 14.5 2.1 4.3 4.7.6-3.4 3.3.8 4.7-4.2-2.3-4.2 2.3.8-4.7-3.4-3.3 4.7-.6z" class="st"/></svg>';
+
 // Illustrations : de petites maquettes de l'interface, animées si le téléphone le permet.
 const NEWS_ART = {
   swipe: () => `<p class="art-label">Récents</p><div class="art-card">
@@ -1310,6 +1330,9 @@ const NEWS_ART = {
   },
   note: () => `<div class="art-card"><div class="art-row"><span><b>GRAND'MAISON</b><small>12 km SE <em>Emplacement à confirmer</em></small></span></div></div>
     <p class="art-sheetnote">Emplacement à confirmer</p>`,
+  favfile: () => `<p class="art-label">${isApple ? "iCloud Drive › NavigationCentrales" : "Téléchargements"}</p>
+    <div class="art-card"><div class="art-row art-file">${ICON_FAVFILE}<span><b>NavigationCentrales-favoris.json</b><small>Vos favoris</small></span></div></div>
+    <div class="art-banner"><span>Le fichier de favoris n'est plus à jour.</span><span class="art-btn">Enregistrer</span></div>`,
   update: () => `<div class="art-banner"><span>Une nouvelle version est disponible.</span><span class="art-btn">Mettre à jour</span></div>`,
   apps: () => `<div class="art-apps"><span class="app-waze">Waze</span><span class="app-gmaps">Google Maps</span>${isApple ? '<span class="app-plans">Plans</span>' : ""}</div>`,
 };
@@ -1403,6 +1426,123 @@ const News = (() => {
   return { maybeShow, openAll };
 })();
 
+/* ===================== Fichier de favoris ===================== */
+
+// Les favoris vivent dans le localStorage, effacé quand on supprime l'appli. Pour les retrouver
+// après une réinstallation ou sur un autre téléphone, ils sont aussi enregistrés dans un fichier
+// que l'utilisateur range lui-même : une appli web ne peut ni créer de dossier, ni écrire ou
+// lire un fichier sans qu'il le choisisse. iPhone : menu Partager → « Enregistrer dans Fichiers » ;
+// Android et ordinateur : téléchargement. Rechargement : sélecteur de fichier.
+// `favFile` (localStorage) = favoris contenus dans le dernier fichier enregistré ou chargé,
+// absent tant qu'aucun fichier n'a été créé ou chargé (on le propose alors au lancement).
+const FavFile = (() => {
+  const NAME = "NavigationCentrales-favoris.json";
+  const dlg = $("#favFile"), input = $("#favFileInput");
+  let saved = store.get("favFile", null);   // { ids, at }
+
+  const key = (ids) => [...ids].sort().join("\n");
+  const dirty = () => !!saved && key(state.favs) !== key(saved.ids);
+  const plural = (n) => `${n} favori${n > 1 ? "s" : ""}`;
+
+  function remember(ids) {
+    saved = { ids: [...ids], at: Date.now() };
+    store.set("favFile", saved);
+    renderFavCount();
+    if (settingsDlg.open) renderSettings();
+  }
+
+  // Une centrale par ligne, comme data/centrales.json. L'identifiant `nom|lat|lon` suffit à
+  // retrouver la centrale (même si elle a quitté la liste depuis).
+  function content() {
+    const favs = [...state.favs].map((id) => {
+      const parts = id.split("|"), lon = Number(parts.pop()), lat = Number(parts.pop());
+      return JSON.stringify({ n: parts.join("|"), lat, lon });
+    });
+    return `{"app": "Navigation Centrales", "type": "favoris", "version": 1, "date": "${new Date().toISOString()}",\n` +
+           `"favoris": [\n${favs.join(",\n")}\n]}\n`;
+  }
+
+  // Appelée directement depuis un toucher : le menu Partager l'exige.
+  async function save() {
+    const ids = [...state.favs];
+    const file = new File([content()], NAME, { type: "application/json" });
+    if (dlg.open) dlg.close();
+    if (isApple && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+      } catch (e) {
+        if (e.name === "AbortError") { toast("Fichier de favoris non enregistré"); return false; }
+        download(file);
+      }
+    } else {
+      download(file);
+    }
+    remember(ids);
+    toast(`Fichier enregistré (${plural(ids.length)})`);
+    return true;
+  }
+
+  function download(file) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = NAME;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+
+  function pick() {
+    input.value = "";
+    input.click();
+  }
+
+  // Les favoris du fichier s'ajoutent à ceux du téléphone (rien n'est perdu).
+  async function load(file) {
+    let list = null;
+    try { list = JSON.parse(await file.text()).favoris; } catch { /* pas du JSON */ }
+    if (!Array.isArray(list)) return toast("Ce fichier ne contient pas de favoris");
+    const ids = list.filter((x) => typeof x?.n === "string" && Number.isFinite(x.lat) && Number.isFinite(x.lon)).map(Sync.idOf);
+    ids.forEach((id) => state.favs.add(id));
+    store.set("favs", [...state.favs]);
+    if (dlg.open) dlg.close();
+    remember(ids);
+    render();
+    toast(`${plural(ids.length)} chargé${ids.length > 1 ? "s" : ""}`);
+  }
+
+  function info() {
+    const n = plural(state.favs.size);
+    if (!saved) return `${n}. Pas encore de fichier de favoris : enregistrez-le pour les retrouver après une réinstallation.`;
+    if (dirty()) return `${n}. Le fichier n'est plus à jour : enregistrez-le à nouveau.`;
+    return `${n}. Fichier à jour (${timeAgo(saved.at)}).`;
+  }
+
+  // Au lancement, tant qu'aucun fichier n'a été créé ou chargé (installation, ou mise à jour
+  // depuis une version sans fichier). Pas dans Safari sur iPhone : l'appli installée a son
+  // propre stockage, c'est là qu'il faut le faire.
+  function maybeAsk() {
+    if (saved || (isApple && !isStandalone)) return;
+    const other = document.querySelector("dialog[open]");
+    if (other) return other.addEventListener("close", maybeAsk, { once: true });
+    dlg.showModal();
+  }
+
+  $("#favFileHelp").innerHTML = (isApple
+    ? ["Pour le créer : touchez « Enregistrer dans Fichiers ».",
+       "Choisissez iCloud Drive (il vous suit sur un nouveau téléphone), créez-y un dossier « NavigationCentrales » et touchez « Enregistrer ».",
+       "Les fois suivantes, enregistrez au même endroit et touchez « Remplacer »."]
+    : ["Le fichier est enregistré dans « Téléchargements ».",
+       "Pour changer de téléphone, copiez-le sur le nouveau (Google Drive, câble…)."])
+    .map((s) => `<li>${escapeHtml(nbsp(s))}</li>`).join("");
+  $("#favFileLoad").addEventListener("click", pick);
+  $("#favFileCreate").addEventListener("click", save);
+  $("#favFileLater").addEventListener("click", () => dlg.close());
+  input.addEventListener("change", () => { if (input.files?.[0]) load(input.files[0]); });
+
+  return { dirty, save, pick, info, maybeAsk };
+})();
+
 /* ===================== Démarrage ===================== */
 
 async function init() {
@@ -1428,6 +1568,7 @@ async function init() {
   renderStatus();
   syncNow();
   News.maybeShow(returning);
+  FavFile.maybeAsk();   // après les nouveautés, qui l'expliquent
 
   // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation)
   if (isApple && !isStandalone) $("#install").hidden = false;
