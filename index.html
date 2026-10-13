@@ -48,6 +48,15 @@
       <button role="tab" data-mode="near" aria-selected="false">Autour de moi</button>
       <button role="tab" data-mode="fav" aria-selected="false">Favoris <span id="favCount"></span></button>
     </div>
+
+    <div class="views" id="views" role="group" aria-label="Présentation" hidden>
+      <button type="button" data-view="list" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Liste
+      </button>
+      <button type="button" data-view="map" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4-5 2v14l5-2 6 2 5-2V4l-5 2zM9 4v14M15 6v14"/></svg>Carte
+      </button>
+    </div>
   </header>
 
   <main id="main">
@@ -61,6 +70,22 @@
     </div>
     <ul class="list" id="list"></ul>
     <p class="empty" id="empty" hidden></p>
+
+    <!-- Autour de moi : carte -->
+    <div class="near-map" id="nearMap" hidden>
+      <div id="nmap" class="map"></div>
+      <button type="button" class="map-btn" id="nmLegend">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></svg>Légende
+      </button>
+      <div class="map-layers" role="group" aria-label="Fond de carte">
+        <button type="button" data-layer="plan" aria-pressed="true">Plan</button>
+        <button type="button" data-layer="sat" aria-pressed="false">Satellite</button>
+      </div>
+      <button type="button" class="map-locate" id="nmLocate" aria-label="Centrer sur ma position">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 3 10.5l7.5 3 3 7.5z"/></svg>
+      </button>
+      <p class="map-pill" id="nmMsg" hidden></p>
+    </div>
   </main>
 
   <dialog class="sheet" id="sheet" aria-labelledby="sheetName">
@@ -127,6 +152,11 @@
           </div>
           <ul class="results" id="fResults" hidden></ul>
         </div>
+
+        <label class="field">
+          <span>Groupe (couleur sur la carte)</span>
+          <select id="fGroup"></select>
+        </label>
       </div>
 
       <div class="map-wrap">
@@ -148,6 +178,18 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAction" hidden>Annuler</button></div>
+
+  <!-- Légende de la carte : afficher ou masquer chaque UP -->
+  <dialog class="sheet" id="legend" aria-labelledby="legendTitle">
+    <div class="sheet-body settings legend">
+      <div class="sheet-head">
+        <h2 id="legendTitle">Légende</h2>
+        <button type="button" class="link" id="legendClose">Fermer</button>
+      </div>
+      <p>Décochez une UP pour la masquer sur la carte.</p>
+      <div id="legendBody"></div>
+    </div>
+  </dialog>
 
   <!-- Aide à l'installation (iPhone : pas d'installation automatique possible) -->
   <dialog class="sheet" id="installHelp" aria-labelledby="installHelpTitle">

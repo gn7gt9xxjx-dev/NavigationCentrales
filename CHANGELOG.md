@@ -2,6 +2,12 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.8.0
+- « Autour de moi » : choix **Liste** ou **Carte**. La carte montre les mêmes centrales que la liste (recherche comprise), à leurs coordonnées GPS ; toucher une centrale ouvre la fiche de navigation. Fond Plan ou Satellite, bouton pour se recentrer, noms affichés en zoomant. Sans réseau, le fond de carte manque mais les centrales et la position restent affichées.
+- Icônes colorées comme sur l'ancienne carte Google « Centrales EDF » : turbine pour l'hydraulique, tour de refroidissement pour les CNPE, flamme pour le thermique, couleur du GEH (ou du palier). Dans la liste « Autour de moi » et sur la carte.
+- Légende de la carte : les UP et leurs GEH, avec une case pour masquer une UP.
+- Liste partagée : nouveaux champs facultatifs `up` et `geh` ; l'écran d'ajout propose le groupe de la centrale la plus proche. Les champs inconnus de la liste sont désormais conservés lors d'un envoi.
+
 ## 1.7.2
 - Bandeau « Une nouvelle version est disponible » : le numéro de la nouvelle version est indiqué entre parenthèses.
 - Juste après une mise à jour, l'appli ne lit plus que les fichiers de la nouvelle version (l'ancien cache pouvait encore servir un instant).
