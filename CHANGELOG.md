@@ -5,6 +5,7 @@ Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (ave
 ## 1.8.0
 - « Autour de moi » : choix **Liste** ou **Carte**. La carte montre les mêmes centrales que la liste (recherche comprise), à leurs coordonnées GPS ; toucher une centrale ouvre la fiche de navigation. Fond Plan ou Satellite, bouton pour se recentrer, noms affichés en zoomant. Sans réseau, le fond de carte manque mais les centrales et la position restent affichées.
 - Icônes colorées comme sur l'ancienne carte Google « Centrales EDF » : turbine pour l'hydraulique, tour de refroidissement pour les CNPE, flamme pour le thermique, couleur du GEH (ou du palier). Dans la liste « Autour de moi » et sur la carte.
+- Sites EDF qui ne sont pas des centrales (bureaux, R&D) : icône de bâtiment.
 - Légende de la carte : les UP et leurs GEH, avec une case pour masquer une UP.
 - Liste partagée : nouveaux champs facultatifs `up` et `geh` ; l'écran d'ajout propose le groupe de la centrale la plus proche. Les champs inconnus de la liste sont désormais conservés lors d'un envoi.
 

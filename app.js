@@ -103,7 +103,7 @@ const COLOR = {
 };
 const GREY = "#8C98A5";
 const GROUPS = [
-  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "ambre"], ["CP1/CP2", "orange"], ["N4", "turquoise"]] },
+  { up: "CNPE", type: "nucleaire", geh: [["P'4", "lime"], ["CP1", "rouge"], ["P4", "vert"], ["CP0", "jaune"], ["CP2", "ambre"], ["N4", "turquoise"]] },
   { up: "UP Centre", geh: [["GEH Dordogne", "bleu"], ["GEH Loire-Ardèche", "orange"], ["GEH Limoges", "noir"], ["GEH BERGERAC", "vert"], ["GEH Lot Truyère", "ambre"], ["GEH Ouest", "violet"], ["GEH Inconnu", "jaune"]] },
   { up: "UP Méditerranée", geh: [["GEH Durance", "violet"], ["GEH Var Roya", "bleu"]] },
   { up: "UP Sud-Ouest", geh: [["GEH Inconnu", "jaune"], ["GEH Adour et Gaves", "bleu"], ["GEH Aude Ariège", "orange"], ["GEH Garonne", "noir"], ["GEH Tarn Agout", "violet"]] },
@@ -111,6 +111,7 @@ const GROUPS = [
   { up: "UP Alpes", geh: [["GEH Savoie Mont Blanc", "bleu"], ["GEH Ecrins Vercors", "vert"], ["GEH Vallée de la Maurienne", "noir"]] },
   { up: "UP Est", geh: [["GEH Jura-Bourgogne", "bleu"], ["GEH Rhin", "orange"], ["GEH Revin-St-Nicolas", "vert"], ["GEH Inconnu", "jaune"]] },
   { up: "Thermique", type: "thermique", geh: [["CPT", "brun"]] },
+  { up: "Sites EDF", type: "site", geh: [["Bureaux", "bleu"], ["R&D", "violet"]] },   // pas des centrales
 ];
 const GROUP_COLOR = new Map(GROUPS.flatMap((g) => g.geh.map(([geh, c]) => [`${g.up}|${geh}`, COLOR[c]])));
 const UP_TYPE = new Map(GROUPS.map((g) => [g.up, g.type || "hydro"]));
@@ -135,9 +136,11 @@ const SPOKES = Array.from({ length: 8 }, (_, i) => {
 }).join("");
 const WAVE = (y) => `M8.5 ${y}q1.9-1.8 3.75 0t3.75 0 3.75 0 3.75 0`;
 const TOWER = "M5.5 29.5Q13.5 20 9.8 10.5h12.4Q18.5 20 26.5 29.5z";
+const HOUSE = "M5.5 29.5V13L16 4.5 26.5 13v16.5z";
 const FLAME = "M16 2.5c.8 4.6 7.5 8 7.5 15.5a7.5 7.5 0 0 1-15 0c0-3.9 1.9-6.4 3.6-8.4.2 2.6 1.3 4.2 2.9 4.8-.6-4.8.3-8.4 1-11.9z";
 
-// Icône d'une centrale (ou d'un groupe) : turbine sur l'eau, tour de refroidissement ou flamme.
+// Icône d'une centrale (ou d'un groupe) : turbine sur l'eau, tour de refroidissement, flamme
+// ou bâtiment (sites EDF qui ne sont pas des centrales).
 function plantIcon(type, color) {
   const ink = inkOn(color);
   const shape = (d) => `<path d="${d}" fill="${color}" stroke="rgba(0,0,0,.35)" stroke-width="3" stroke-linejoin="round"/>` +
@@ -146,6 +149,8 @@ function plantIcon(type, color) {
   if (type === "nucleaire") {
     body = shape(TOWER) + `<path d="M14.2 8.4c0-2.4 1.8-3.2 3.6-3.2s3.4-.8 3.4-3" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="4.4" stroke-linecap="round"/>` +
            `<path d="M14.2 8.4c0-2.4 1.8-3.2 3.6-3.2s3.4-.8 3.4-3" fill="none" stroke="${color}" stroke-width="2.8" stroke-linecap="round"/>`;
+  } else if (type === "site") {
+    body = shape(HOUSE) + `<path d="M11 16h3v3h-3zM18 16h3v3h-3zM14 29.5V23h4v6.5" fill="${ink}" stroke="none"/>`;
   } else if (type === "thermique") {
     body = shape(FLAME) + `<path d="M16 25c-1.7 0-2.8-1.2-2.8-2.8 0-1.6 1.3-2.8 2.8-4.7 1.5 1.9 2.8 3.1 2.8 4.7 0 1.6-1.1 2.8-2.8 2.8z" fill="${ink}" stroke="none"/>`;
   } else {
