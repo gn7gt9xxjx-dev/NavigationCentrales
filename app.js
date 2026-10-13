@@ -381,7 +381,7 @@ function toggleFav(id) {
 }
 
 let toastTimer, toastUndo = null;
-function toast(msg, undo = null, label = "Annuler") {
+function toast(msg, undo = null, label = "Annuler", ms = undo ? 5000 : 1800) {
   const t = $("#toast");
   $("#toastMsg").textContent = msg;
   toastUndo = undo;
@@ -389,7 +389,7 @@ function toast(msg, undo = null, label = "Annuler") {
   $("#toastAction").textContent = label;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.classList.remove("show"); toastUndo = null; }, undo ? 5000 : 1800);
+  toastTimer = setTimeout(() => { t.classList.remove("show"); toastUndo = null; }, ms);
 }
 
 /* ===================== Carte « Autour de moi » ===================== */
@@ -1244,7 +1244,7 @@ const NEWS = [
     { art: "favfile", title: "Vos favoris gardés dans un fichier",
       text: "Après une réinstallation ou sur un nouveau téléphone, rechargez ce fichier pour retrouver vos favoris.",
       steps: [
-        "Au lancement, choisissez « Charger mon fichier » ou « Créer le fichier ».",
+        "Au premier lancement, choisissez « Charger mon fichier » ou « Créer le fichier ».",
         isApple ? "Pour le créer : « Enregistrer dans Fichiers », dans iCloud Drive, dossier « NavigationCentrales »."
                 : "Le fichier est enregistré dans « Téléchargements ».",
         "Après avoir ajouté ou retiré un favori, touchez « Enregistrer » pour le mettre à jour.",
@@ -1433,8 +1433,8 @@ const News = (() => {
 // que l'utilisateur range lui-même : une appli web ne peut ni créer de dossier, ni écrire ou
 // lire un fichier sans qu'il le choisisse. iPhone : menu Partager → « Enregistrer dans Fichiers » ;
 // Android et ordinateur : téléchargement. Rechargement : sélecteur de fichier.
-// `favFile` (localStorage) = favoris contenus dans le dernier fichier enregistré ou chargé,
-// absent tant qu'aucun fichier n'a été créé ou chargé (on le propose alors au lancement).
+// `favFile` (localStorage) = favoris contenus dans le dernier fichier enregistré ou chargé.
+// `favFileAsked` : la question « charger ou créer » n'est posée qu'une fois ; ensuite, Réglages → Favoris.
 const FavFile = (() => {
   const NAME = "NavigationCentrales-favoris.json";
   const dlg = $("#favFile"), input = $("#favFileInput");
@@ -1518,13 +1518,14 @@ const FavFile = (() => {
     return `${n}. Fichier à jour (${timeAgo(saved.at)}).`;
   }
 
-  // Au lancement, tant qu'aucun fichier n'a été créé ou chargé (installation, ou mise à jour
-  // depuis une version sans fichier). Pas dans Safari sur iPhone : l'appli installée a son
+  // Une seule fois, au premier lancement (installation, ou mise à jour depuis une version sans
+  // fichier), quelle que soit la réponse. Pas dans Safari sur iPhone : l'appli installée a son
   // propre stockage, c'est là qu'il faut le faire.
   function maybeAsk() {
-    if (saved || (isApple && !isStandalone)) return;
+    if (saved || store.get("favFileAsked", false) || (isApple && !isStandalone)) return;
     const other = document.querySelector("dialog[open]");
     if (other) return other.addEventListener("close", maybeAsk, { once: true });
+    store.set("favFileAsked", true);
     dlg.showModal();
   }
 
@@ -1537,7 +1538,10 @@ const FavFile = (() => {
     .map((s) => `<li>${escapeHtml(nbsp(s))}</li>`).join("");
   $("#favFileLoad").addEventListener("click", pick);
   $("#favFileCreate").addEventListener("click", save);
-  $("#favFileLater").addEventListener("click", () => dlg.close());
+  $("#favFileLater").addEventListener("click", () => {
+    dlg.close();
+    toast("À faire plus tard dans Réglages\u00a0→\u00a0Favoris", null, "", 4000);
+  });
   input.addEventListener("change", () => { if (input.files?.[0]) load(input.files[0]); });
 
   return { dirty, save, pick, info, maybeAsk };

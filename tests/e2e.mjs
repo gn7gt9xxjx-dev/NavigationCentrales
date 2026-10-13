@@ -115,6 +115,11 @@ try {
   const { page: B } = await phone("Pixel 7");
   assert.equal(await B.isVisible("#favFile"), true);
   await B.click("#favFileLater"); await B.waitForTimeout(200);
+  assert.equal(await B.textContent("#toastMsg"), "À faire plus tard dans Réglages\u00a0→\u00a0Favoris");
+  assert.equal(await B.isVisible("#toastAction"), false);
+  await B.reload(); await B.waitForSelector(".row"); await B.waitForTimeout(500);
+  assert.equal(await B.isVisible("#favFile"), false);
+  ok("favoris : question posée au premier lancement ; « Plus tard » renvoie aux Réglages et elle n'est plus posée");
   await B.fill("#q", "test ajout"); await B.waitForTimeout(200);
   assert.deepEqual(await names(B), ["TEST AJOUT"]);
   await B.click(".row"); await B.waitForTimeout(300);

@@ -4,7 +4,7 @@ Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (ave
 
 ## 1.10.0
 - **Fichier de favoris** : les favoris peuvent être enregistrés dans un fichier `NavigationCentrales-favoris.json` (iPhone : menu Partager → « Enregistrer dans Fichiers », de préférence dans iCloud Drive, dossier « NavigationCentrales » ; Android : Téléchargements) et rechargés après une réinstallation ou sur un nouveau téléphone. Les favoris du fichier s'ajoutent à ceux du téléphone.
-- Au lancement (installation, ou mise à jour depuis une version précédente), tant qu'aucun fichier n'a été créé ou chargé : « Oui, charger mon fichier » / « Non, créer le fichier » (« Plus tard » repose la question au lancement suivant). Pas dans Safari sur iPhone, seulement dans l'appli installée.
+- Au premier lancement (installation, ou mise à jour depuis une version précédente) : « Oui, charger mon fichier » / « Non, créer le fichier » / « Plus tard ». La question n'est posée qu'une fois ; « Plus tard » rappelle qu'on peut le faire dans Réglages → Favoris. Pas dans Safari sur iPhone, seulement dans l'appli installée.
 - Après l'ajout ou le retrait d'un favori : bouton « Enregistrer » dans le message, et bandeau « Le fichier de favoris n'est plus à jour » tant qu'il ne l'est pas.
 - Réglages → Favoris : état du fichier, « Enregistrer le fichier de favoris », « Charger un fichier de favoris ».
 - Une appli web ne peut pas créer seule de dossier (avec son icône) dans Fichiers, ni lire ou écrire un fichier sans que l'utilisateur le choisisse : c'est réservé aux applis de l'App Store / du Play Store.
