@@ -10,6 +10,7 @@ Webapp iPhone (PWA) pour lancer Waze, Google Maps ou Plans vers l'une des 584 ce
 - Recherche sans accents, « St » = « Saint ».
 - « Autour de moi » classe les centrales par distance (le GPS fonctionne sans réseau).
 - Favoris, derniers lancements, appli de navigation préférée mémorisés sur le téléphone.
+- Après chaque mise à jour, une courte présentation montre les nouvelles fonctions et comment s'en servir (à revoir dans Réglages → À propos).
 - **Liste partagée** : la liste vit dans un dépôt séparé, [DataNavigationCentrales](https://github.com/gn7gt9xxjx-dev/DataNavigationCentrales) (`data/centrales.json`). Chaque téléphone récupère la dernière version dès qu'il a du réseau, et garde la précédente pour fonctionner hors ligne.
 - **Ajouter / supprimer une centrale** (avec un code d'édition) : carte plan ou satellite, recherche de lieu, saisie directe des coordonnées GPS (décimales, degrés-minutes-secondes ou lien Google Maps), alerte si une centrale existe déjà à moins d'1 km, suppression avec confirmation puis « Annuler ». Chaque modification devient un commit dans le dépôt de données (historique et retour arrière possibles). Hors réseau, les modifications attendent et partent au retour du réseau.
 

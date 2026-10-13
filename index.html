@@ -210,6 +210,38 @@
     </div>
   </dialog>
 
+  <!-- Nouveautés : présentation pas à pas (après une mise à jour, ou depuis la liste ci-dessous) -->
+  <dialog class="sheet" id="news" aria-labelledby="newsTitle">
+    <div class="sheet-body news" tabindex="-1" autofocus>
+      <div class="sheet-head">
+        <p class="news-kicker" id="newsKicker"></p>
+        <button type="button" class="link" id="newsSkip">Passer</button>
+      </div>
+      <div class="news-art" id="newsArt" aria-hidden="true"></div>
+      <h2 id="newsTitle"></h2>
+      <p class="news-text" id="newsText"></p>
+      <ol class="news-steps" id="newsSteps"></ol>
+      <p class="news-where" id="newsWhere" hidden>Retrouvez ces explications dans Réglages, rubrique «&nbsp;À propos&nbsp;».</p>
+      <div class="news-foot">
+        <button type="button" class="link" id="newsPrev">Retour</button>
+        <div class="news-dots" id="newsDots" role="img"></div>
+        <button type="button" class="btn-primary" id="newsNext">Suivant</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Nouveautés : liste par version (Réglages → À propos) -->
+  <dialog class="sheet" id="newsAll" aria-labelledby="newsAllTitle">
+    <div class="sheet-body settings legend">
+      <div class="sheet-head">
+        <h2 id="newsAllTitle">Nouveautés</h2>
+        <button type="button" class="link" id="newsAllClose">Fermer</button>
+      </div>
+      <p>Touchez une nouveauté pour voir comment l'utiliser.</p>
+      <div id="newsAllBody"></div>
+    </div>
+  </dialog>
+
   <!-- Réglages : liste partagée et code d'édition -->
   <dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
     <div class="sheet-body settings">
@@ -251,6 +283,7 @@
       <section>
         <h3>À propos</h3>
         <p id="setVersion"></p>
+        <button type="button" class="btn-plain wide" id="setNews">Nouveautés de chaque version</button>
         <button type="button" class="btn-plain wide" id="setCheckUpdate">Rechercher une mise à jour</button>
         <small id="setUpdateMsg"></small>
       </section>

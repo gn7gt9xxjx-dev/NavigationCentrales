@@ -59,7 +59,8 @@ try {
   const { ctx: ctxA, page: A } = await phone();
   assert.equal(await status(A), "À jour");
   assert.equal(await A.isVisible("#add"), false);
-  ok("lecteur : liste à jour, pas de bouton +");
+  assert.equal(await A.isVisible("#news"), false);
+  ok("lecteur : liste à jour, pas de bouton +, pas de nouveautés à la première installation");
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
   ok("recherche « st lau » → CNPE St Laurent");
@@ -211,6 +212,41 @@ try {
   await C.click('[data-mode="near"]'); await C.waitForSelector("#nmap .mk");
   assert.equal(await C.getAttribute('[data-view="map"]', "aria-pressed"), "true");
   ok("légende : masquer / réafficher une UP ; le choix Carte est mémorisé");
+
+  // Nouveautés : présentées une seule fois après une mise à jour, puis dans les Réglages
+  const newsCount = (v) => C.evaluate((v) => NEWS.filter((e) => cmpVersion(e.v, v) > 0).reduce((n, e) => n + e.items.length, 0), v);
+  assert.equal(await C.isVisible("#news"), false);
+  await C.evaluate(() => localStorage.setItem("newsSeen", JSON.stringify("1.7.2")));
+  await C.reload(); await C.waitForSelector("#news[open]");
+  assert.equal(await C.textContent("#newsKicker"), "Nouveau · version 1.8.0");
+  const pages = await newsCount("1.7.2");
+  assert.equal(await C.$$eval("#newsDots span", (d) => d.length), pages);
+  for (let i = 1; i < pages; i++) { assert.equal(await C.textContent("#newsNext"), "Suivant"); await C.click("#newsNext"); }
+  assert.equal(await C.textContent("#newsNext"), "Compris");
+  assert.equal(await C.isVisible("#newsWhere"), true);
+  await C.click("#newsNext"); await C.waitForTimeout(200);
+  assert.equal(await C.isVisible("#news"), false);
+  assert.equal(await C.evaluate(() => JSON.parse(localStorage.getItem("newsSeen")) === APP_VERSION), true);
+  await C.reload(); await C.waitForSelector(".row"); await C.waitForTimeout(500);
+  assert.equal(await C.isVisible("#news"), false);
+  ok("nouveautés : présentées après une mise à jour, une seule fois");
+  await C.evaluate(() => localStorage.removeItem("newsSeen"));
+  await C.reload(); await C.waitForSelector("#news[open]");
+  assert.equal(await C.textContent("#newsKicker"), "Nouveau · version 1.7.0");
+  assert.equal(await C.$$eval("#newsDots span", (d) => d.length), await newsCount("1.6.0"));
+  await C.click("#newsSkip"); await C.waitForTimeout(200);
+  assert.equal(await C.isVisible("#news"), false);
+  ok("nouveautés : utilisateur d'une version sans cet écran → depuis la 1.7, « Passer » ferme");
+  await C.click("#openSettings"); await C.click("#setNews"); await C.waitForTimeout(300);
+  assert.equal(await C.$$eval(".nw-item", (b) => b.length), await newsCount("0"));
+  await C.click('.nw-item:has-text("Balayer")'); await C.waitForTimeout(300);
+  assert.equal(await C.textContent("#newsTitle"), "Balayer une centrale récente");
+  assert.equal(await C.textContent("#newsKicker"), "version 1.7.0");
+  await C.click("#newsNext"); await C.waitForTimeout(200);
+  assert.equal(await C.isVisible("#news"), false);
+  assert.equal(await C.isVisible("#newsAll"), true);
+  await C.click("#newsAllClose"); await C.click("#setClose");
+  ok("réglages → « Nouveautés de chaque version » : liste par version, toucher ouvre l'explication");
 
   const errors = [...A.errors, ...B.errors, ...C.errors];
   assert.deepEqual(errors, []);
