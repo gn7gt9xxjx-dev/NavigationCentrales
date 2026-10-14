@@ -1215,7 +1215,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.0";
+const APP_VERSION = "1.10.1";
 
 async function renderVersion() {
   let cache = "";
