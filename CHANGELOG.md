@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.2
+- Ajout d'une centrale sur iPhone : l'écran suit la zone visible au-dessus du clavier (barre « Annuler / Ajouter » toujours visible, contenu qui défile) et la liste des centrales est masquée pendant la saisie. La correction de la 1.10.1 ne suffisait pas sur iPhone.
+
 ## 1.10.1
 - Ajout d'une centrale sur iPhone : la liste des centrales n'apparaît plus derrière le clavier pendant la saisie (coordonnées GPS, nom…).
 
