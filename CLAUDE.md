@@ -72,6 +72,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 - Sur iOS, l'appli installée et Safari **ne partagent pas** leur stockage : le code d'édition doit être saisi dans l'appli lancée depuis l'icône.
 - `apple-touch-icon` doit rester un PNG 180×180 opaque, pleine taille (iOS arrondit lui-même les coins). Pas de favicon SVG (iOS l'affiche réduit).
 - `<dialog>` + `showModal()` pour toutes les fenêtres ; les zones sûres sont gérées par `env(safe-area-inset-*)`.
+- **Sauf l'écran d'ajout (`#editor`)** : ouvert par `show()`, il **remplace** l'en-tête et la liste (retirés de la page, position de la liste rendue à la fermeture) au lieu d'être posé dessus. Une fenêtre fixe plein écran au-dessus d'une longue page se comporte mal avec le clavier iOS (liste visible à travers le clavier, touchers et défilement qui atteignent la liste, clignotements). Ne pas revenir à `showModal()` pour lui.
 
 ## Commandes
 
