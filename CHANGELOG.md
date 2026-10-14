@@ -2,6 +2,10 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.11.0
+- Ajout d'une centrale : les codes Google (Plus Codes) sont compris dans « Trouver sur la carte » et « Coordonnées GPS ». Code court avec la commune (« XQ5R+9M Arrens-Marsous », commune cherchée sur Nominatim) ou complet (« 8CJXXQ5R+9M », lu même hors ligne) ; sans commune ou sans réseau, le code est complété d'après la position du téléphone.
+- Coordonnées : aussi les degrés-minutes des GPS (« N 45° 6.272' E 1° 57.215' »), les degrés décimaux avec N/E (« 45.10453°N »), les liens Waze encodés (`ll=45.1%2C1.9`) et la position exacte des liens Google Maps vers un lieu (`!3d…!4d…`).
+
 ## 1.10.7
 - Réglages → À propos : « Nouveautés de chaque version » et « Rechercher une mise à jour » sont espacés, comme les boutons des favoris.
 - Les fenêtres (Réglages, fiche d'une centrale…) montent d'un seul bloc à l'ouverture : sur iPhone, les Réglages s'affichaient d'abord à moitié avant de prendre toute la hauteur.

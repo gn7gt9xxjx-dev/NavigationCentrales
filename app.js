@@ -999,30 +999,128 @@ function bind() {
 
 /* ===================== Ajout d'une centrale ===================== */
 
-// Comprend « 45.10453, 1.95359 », « 45,10453 1,95359 », le format degrés-minutes-secondes
-// (45°06'16.3"N 1°57'12.9"E) et les liens Google Maps / Waze contenant des coordonnées.
+// Comprend « 45.10453, 1.95359 », « 45,10453 1,95359 », les degrés-minutes-secondes
+// (45°06'16.3"N 1°57'12.9"E), les degrés-minutes des GPS (N 45° 6.272' E 1° 57.215')
+// et les liens Google Maps / Waze contenant des coordonnées.
 function parseCoords(text) {
-  const t = text.trim();
+  let t = text.trim();
   if (!t) return null;
+  try { t = decodeURIComponent(t); } catch { /* texte ordinaire */ }
   const ok = (lat, lon) => (Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { lat, lon } : null);
 
-  let m = t.match(/[@=](-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);                  // lien
+  let m = t.match(/!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/);                     // lien vers un lieu
+  if (m) return ok(+m[1], +m[2]);
+  m = t.match(/[@=](-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);                       // lien
   if (m) return ok(+m[1], +m[2]);
   m = t.match(/^(-?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);          // 45.1, 1.9
   if (m) return ok(+m[1], +m[2]);
   m = t.match(/^(-?\d{1,2},\d+)\s*[;\s]\s*(-?\d{1,3},\d+)$/);                      // 45,1 1,9
   if (m) return ok(+m[1].replace(",", "."), +m[2].replace(",", "."));
-  const dms = /(\d{1,3})°\s*(?:(\d{1,2})['′’]\s*)?(?:([\d.,]+)["″”]\s*)?([NSEOW])/gi;
-  const parts = [...t.matchAll(dms)];
-  if (parts.length === 2) {
+
+  // Degrés, minutes, secondes ; N/S/E/O (ou W) après chaque valeur, sinon avant
+  const n = "(\\d{1,3}(?:[.,]\\d+)?)";
+  const dms = `${n}\\s*°\\s*(?:${n}\\s*['′’]\\s*)?(?:${n}\\s*(?:["″”]|['′’]{2})\\s*)?`;
+  const num = (s) => +(s || "0").replace(",", ".");
+  for (const [re, h, d] of [[`${dms}([NSEOW])`, 4, 1], [`([NSEOW])\\s*${dms}`, 1, 2]]) {
+    const parts = [...t.matchAll(new RegExp(re, "gi"))];
+    if (parts.length !== 2) continue;
     const val = (p) => {
-      const v = +p[1] + (+p[2] || 0) / 60 + (+(p[3] || "0").replace(",", ".")) / 3600;
-      return /[SOW]/i.test(p[4]) ? -v : v;
+      const v = num(p[d]) + num(p[d + 1]) / 60 + num(p[d + 2]) / 3600;
+      return /[SOW]/i.test(p[h]) ? -v : v;
     };
     const [a, b] = parts;
-    return /[NS]/i.test(a[4]) ? ok(val(a), val(b)) : ok(val(b), val(a));
+    if (/[NS]/i.test(a[h]) === /[NS]/i.test(b[h])) return null;
+    return /[NS]/i.test(a[h]) ? ok(val(a), val(b)) : ok(val(b), val(a));
   }
   return null;
+}
+
+// Plus Codes, les « codes Google » de Google Maps (algorithme public Open Location Code).
+// Complet : « 8CPXXQ5R+9M ». Court : « XQ5R+9M Arrens-Marsous » ; il manque alors le début du
+// code, repris d'un point proche (la commune écrite à côté, ou à défaut votre position).
+const OLC = "23456789CFGHJMPQRVWX";
+
+// → { code, short, place } ou null. `place` : le reste du texte (la commune).
+function parsePlusCode(text) {
+  let t = text.trim();
+  try { t = decodeURIComponent(t); } catch { /* texte ordinaire */ }
+  const m = t.match(/(?:^|[\s,;(])((?:[2-9CFGHJMPQRVWX]{2}){1,4}(?:0{2,6})?\+(?:[2-9CFGHJMPQRVWX]{2,})?)(?=$|[\s,;)])/i);
+  if (!m) return null;
+  const code = m[1].toUpperCase(), [head, tail] = code.split("+");
+  const padded = head.includes("0");
+  if (head.length !== 8 && padded) return null;                       // 8 caractères avant « + »
+  if (padded && tail) return null;
+  if (head.length < 8 && tail.length < 2) return null;               // code court : au moins 2 après « + »
+  if (head.length === 8 && (OLC.indexOf(head[0]) > 8 || OLC.indexOf(head[1]) > 17)) return null;  // hors de la Terre
+  const start = m.index + m[0].length - m[1].length;
+  const place = (t.slice(0, start) + " " + t.slice(start + code.length)).replace(/^[\s,;()]+|[\s,;()]+$/g, "").replace(/\s+/g, " ");
+  return { code, short: head.length < 8, place };
+}
+
+// Centre de la zone désignée par un code complet
+function plusCodeDecode(code) {
+  const d = code.replace("+", "").replace(/0+$/, "");
+  let lat = -90, lon = -180, h = 20, w = 20;
+  for (let i = 0, r = 20; i < Math.min(d.length, 10); i += 2, r /= 20) {
+    lat += OLC.indexOf(d[i]) * r;
+    lon += OLC.indexOf(d[i + 1]) * r;
+    h = w = r;
+  }
+  for (let i = 10; i < d.length; i++) {                               // précision supplémentaire
+    h /= 5; w /= 4;
+    const k = OLC.indexOf(d[i]);
+    lat += Math.floor(k / 4) * h;
+    lon += (k % 4) * w;
+  }
+  return { lat: Math.min(lat + h / 2, 90), lon: lon + w / 2 };
+}
+
+// Code complet ou court complété autour de `ref` (le point le plus proche de `ref`)
+function plusCodePoint({ code, short }, ref) {
+  if (!short) return plusCodeDecode(code);
+  const missing = 8 - code.indexOf("+");
+  const size = 20 ** (2 - missing / 2);                             // côté de la zone (degrés)
+  let la = Math.min(Math.max(ref.lat, -90), 89.999999) + 90, lo = (((ref.lon + 180) % 360) + 360) % 360;
+  let prefix = "";
+  for (let i = 0, r = 20; i < missing; i += 2, r /= 20) {
+    const a = Math.floor(la / r), b = Math.floor(lo / r);
+    prefix += OLC[a] + OLC[b];
+    la -= a * r; lo -= b * r;
+  }
+  let { lat, lon } = plusCodeDecode(prefix + code);
+  if (ref.lat + size / 2 < lat && lat - size >= -90) lat -= size;
+  else if (ref.lat - size / 2 > lat && lat + size <= 90) lat += size;
+  if (ref.lon + size / 2 < lon) lon -= size;
+  else if (ref.lon - size / 2 > lon) lon += size;
+  if (lon >= 180) lon -= 360;
+  if (lon < -180) lon += 360;
+  return { lat, lon };
+}
+
+async function geocode(q, limit = 6) {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${limit}&accept-language=fr&q=${encodeURIComponent(q)}`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+// Position d'un Plus Code → { lat, lon, note? } ou { error }
+async function locatePlusCode(pc) {
+  if (!pc.short) return plusCodePoint(pc);
+  let missing = "";
+  if (pc.place) {
+    if (navigator.onLine) {
+      try {
+        const [r] = await geocode(pc.place, 1);
+        if (r) return plusCodePoint(pc, { lat: +r.lat, lon: +r.lon });
+        missing = `Commune « ${pc.place} » introuvable.`;
+      } catch { missing = `Commune « ${pc.place} » : la recherche n'a pas abouti.`; }
+    } else missing = `Pas de réseau pour trouver « ${pc.place} ».`;
+  }
+  if (state.pos) {
+    return { ...plusCodePoint(pc, state.pos), note: `${missing} Code complété d'après votre position : vérifiez le point sur la carte.`.trim() };
+  }
+  return { error: missing || `Ajoutez la commune après le code, par exemple « ${pc.code} Arrens-Marsous ».` };
 }
 
 const Editor = (() => {
@@ -1114,6 +1212,14 @@ const Editor = (() => {
       `<optgroup label="${escapeHtml(up)}">${(gehs.size ? [...gehs] : [""]).map((geh) => opt(up, geh)).join("")}</optgroup>`).join("");
   }
 
+  // Code Google saisi dans « Coordonnées GPS » : le champ garde le code, le message
+  // donne les coordonnées (utile sans carte, hors ligne)
+  function showPlusCode(r) {
+    if (r.error) { coordsMsg.className = "error"; coordsMsg.textContent = r.error; return; }
+    setPoint(r.lat, r.lon, { fromInput: true });
+    coordsMsg.textContent = `${r.lat.toFixed(6)}, ${r.lon.toFixed(6)} · ${coordsMsg.textContent}${r.note ? ` ${r.note}` : ""}`;
+  }
+
   function validate() {
     save.disabled = !(name.value.trim() && point);
   }
@@ -1128,13 +1234,21 @@ const Editor = (() => {
     if (!q) return;
     const c = parseCoords(q);
     if (c) { showResults(""); search.blur(); setPoint(c.lat, c.lon); return; }
+    const pc = parsePlusCode(q);
+    if (pc) {
+      showResults('<li class="info">Lecture du code…</li>');
+      const r = await locatePlusCode(pc);
+      if (search.value.trim() !== q) return;
+      if (r.error) { showResults(`<li class="info">${escapeHtml(r.error)}</li>`); return; }
+      showResults(""); search.blur();
+      setPoint(r.lat, r.lon);
+      if (r.note) coordsMsg.textContent += ` ${r.note}`;
+      return;
+    }
     if (!navigator.onLine) { showResults('<li class="info">La recherche par nom nécessite du réseau.</li>'); return; }
     showResults('<li class="info">Recherche…</li>');
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=fr&q=${encodeURIComponent(q)}`;
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
-      if (!res.ok) throw new Error(res.status);
-      const list = await res.json();
+      const list = await geocode(q);
       if (!list.length) { showResults(`<li class="info">Aucun lieu trouvé pour « ${escapeHtml(q)} ». Essayez un nom de commune, ou placez le repère sur la carte.</li>`); return; }
       showResults(list.map((r, i) => {
         const title = r.name || r.display_name.split(",")[0];
@@ -1164,7 +1278,7 @@ const Editor = (() => {
     showResults("");
     coords.style.borderColor = "";
     coordsMsg.className = "";
-    coordsMsg.textContent = "Saisissez-les directement si vous les connaissez.";
+    coordsMsg.textContent = "Saisissez-les directement si vous les connaissez (ou un code Google).";
     $("#fSearchGo").disabled = false;
     validate();
     // L'éditeur remplace la liste (voir .editor dans styles.css) : on retient où elle en était
@@ -1196,18 +1310,31 @@ const Editor = (() => {
   search.addEventListener("input", () => { if (!search.value) showResults(""); });
   $("#fSearchGo").addEventListener("click", runSearch);
   groupSel.addEventListener("change", () => { groupTouched = true; });
+  // Un code Google court se lit quand on arrête de taper (il faut chercher la commune)
+  let codeTimer = 0;
   coords.addEventListener("input", () => {
-    const c = parseCoords(coords.value);
+    clearTimeout(codeTimer);
+    const text = coords.value;
+    const c = parseCoords(text);
     if (c) { setPoint(c.lat, c.lon, { fromInput: true }); return; }
+    const pc = parsePlusCode(text);
+    if (pc && !pc.short) { showPlusCode(plusCodePoint(pc)); return; }
     point = null;
     if (marker) { marker.remove(); marker = null; }
     validate();
-    if (coords.value.trim()) {
+    if (pc) {
+      coordsMsg.className = "";
+      coordsMsg.textContent = "Lecture du code…";
+      codeTimer = setTimeout(async () => {
+        const r = await locatePlusCode(pc);
+        if (coords.value === text) showPlusCode(r);
+      }, 900);
+    } else if (text.trim()) {
       coordsMsg.className = "error";
-      coordsMsg.textContent = "Format attendu : 45.10453, 1.95359";
+      coordsMsg.textContent = "Format attendu : 45.10453, 1.95359 ou code Google (XQ5R+9M Arrens-Marsous)";
     } else {
       coordsMsg.className = "";
-      coordsMsg.textContent = "Saisissez-les directement si vous les connaissez.";
+      coordsMsg.textContent = "Saisissez-les directement si vous les connaissez (ou un code Google).";
     }
   });
   dlg.querySelectorAll(".map-layers button").forEach((b) => b.addEventListener("click", () => {
@@ -1234,7 +1361,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.7";
+const APP_VERSION = "1.11.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1259,6 +1386,16 @@ const cmpVersion = (a, b) => {
 // quand une version apporte quelque chose que l'utilisateur doit savoir utiliser.
 // `art` : illustration dessinée par NEWS_ART.
 const NEWS = [
+  { v: "1.11.0", date: "14 octobre 2026", items: [
+    { art: "pluscode", title: "Les codes Google compris à l'ajout",
+      text: "Pour ajouter une centrale, collez le code Google d'un lieu (par exemple « XQ5R+9M Arrens-Marsous ») : le point s'affiche sur la carte.",
+      steps: [
+        "Dans Google Maps, touchez le lieu, puis copiez son code (4 caractères, un « + », puis 2 ou 3 autres).",
+        "Collez-le dans « Trouver sur la carte » ou dans « Coordonnées GPS », avec la commune.",
+        "Les coordonnées GPS sont aussi comprises : 45.10453, 1.95359, degrés-minutes-secondes ou format des GPS (N 45° 6.272').",
+      ],
+      note: "Sans la commune, le code est complété d'après votre position." },
+  ] },
   { v: "1.10.0", date: "13 octobre 2026", items: [
     { art: "favfile", title: "Vos favoris gardés dans un fichier",
       text: "Après une réinstallation ou sur un nouveau téléphone, rechargez ce fichier pour retrouver vos favoris.",
@@ -1352,6 +1489,8 @@ const NEWS_ART = {
   favfile: () => `<p class="art-label">${isApple ? "iCloud Drive › NavigationCentrales" : "Téléchargements"}</p>
     <div class="art-card"><div class="art-row art-file">${ICON_FAVFILE}<span><b>NavigationCentrales-favoris.json</b><small>Vos favoris</small></span></div></div>
     <div class="art-banner"><span>Le fichier de favoris n'est plus à jour.</span><span class="art-btn">Enregistrer</span></div>`,
+  pluscode: () => `<p class="art-label">Coordonnées GPS</p>
+    <div class="art-card"><div class="art-row"><span><b>XQ5R+9M Arrens-Marsous</b><small>42.958438, -0.208313</small></span></div></div>`,
   update: () => `<div class="art-banner"><span>Une nouvelle version est disponible.</span><span class="art-btn">Mettre à jour</span></div>`,
   apps: () => `<div class="art-apps"><span class="app-waze">Waze</span><span class="app-gmaps">Google Maps</span>${isApple ? '<span class="app-plans">Plans</span>' : ""}</div>`,
 };
