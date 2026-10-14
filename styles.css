@@ -333,7 +333,7 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
   background: var(--bg); color: var(--ink);
 }
 .editor::backdrop { background: var(--bg); }
-body:has(#editor[open]) > :is(header, main) { visibility: hidden; }
+body:has(#editor[open]) > :is(header, main) { visibility: hidden; pointer-events: none; }
 .editor[open] { animation: up .28s cubic-bezier(.2, .8, .2, 1); }
 .editor-inner {
   display: flex; flex-direction: column; height: 100%;

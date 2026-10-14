@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.3
+- Ajout d'une centrale sur iPhone : toucher le fond de l'écran pendant la saisie n'ouvre plus la fiche d'une centrale de la liste cachée dessous, ce qui interrompait la saisie.
+
 ## 1.10.2
 - Ajout d'une centrale sur iPhone : l'écran suit la zone visible au-dessus du clavier (barre « Annuler / Ajouter » toujours visible, contenu qui défile) et la liste des centrales est masquée pendant la saisie. La correction de la 1.10.1 ne suffisait pas sur iPhone.
 

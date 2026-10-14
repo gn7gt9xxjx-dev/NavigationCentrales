@@ -336,6 +336,8 @@ function locate() {
 const sheet = $("#sheet");
 
 function openSheet(p) {
+  // iPhone, clavier ouvert : un toucher sur le fond de l'éditeur peut atteindre la liste cachée dessous
+  if ($("#editor").open) return;
   state.current = p;
   $("#sheetName").textContent = p.n;
   let meta = `${formatCoord(p.lat)}, ${formatCoord(p.lon)}`;
@@ -1231,7 +1233,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.2";
+const APP_VERSION = "1.10.3";
 
 async function renderVersion() {
   let cache = "";
