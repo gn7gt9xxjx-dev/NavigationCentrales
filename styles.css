@@ -334,11 +334,14 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
 }
 .editor::backdrop { background: var(--bg); }
 body:has(#editor[open]) > :is(header, main) { visibility: hidden; pointer-events: none; }
+/* La page ne défile pas sous l'éditeur (sinon son ascenseur apparaît en faisant glisser l'écran) */
+html:has(#editor[open]), html:has(#editor[open]) body { overflow: hidden; }
+.editor, .editor-inner { overscroll-behavior: contain; }
 .editor[open] { animation: up .28s cubic-bezier(.2, .8, .2, 1); }
 .editor-inner {
   display: flex; flex-direction: column; height: 100%;
   max-width: 640px; margin: 0 auto;
-  overflow-y: auto; overscroll-behavior: contain;
+  overflow-y: auto;
   padding-bottom: env(safe-area-inset-bottom);
 }
 .editor-bar {

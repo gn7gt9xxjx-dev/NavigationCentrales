@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.5
+- Ajout d'une centrale : la liste ne défile plus sous l'écran d'ajout quand on le fait glisser (son ascenseur apparaissait sur le côté).
+
 ## 1.10.4
 - Ajout d'une centrale : toucher le fond de l'écran pendant la saisie ne ferme plus le clavier (l'écran sautait). Pour le fermer : « ✓ » au-dessus du clavier.
 
