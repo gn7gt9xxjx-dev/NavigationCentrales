@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.1
+- Ajout d'une centrale sur iPhone : la liste des centrales n'apparaît plus derrière le clavier pendant la saisie (coordonnées GPS, nom…).
+
 ## 1.10.0
 - **Fichier de favoris** : les favoris peuvent être enregistrés dans un fichier `NavigationCentrales-favoris.json` (iPhone : menu Partager → « Enregistrer dans Fichiers », de préférence dans iCloud Drive, dossier « NavigationCentrales » ; Android : Téléchargements) et rechargés après une réinstallation ou sur un nouveau téléphone. Les favoris du fichier s'ajoutent à ceux du téléphone.
 - Au premier lancement (installation, ou mise à jour depuis une version précédente) : « Oui, charger mon fichier » / « Non, créer le fichier » / « Plus tard ». La question n'est posée qu'une fois ; « Plus tard » rappelle qu'on peut le faire dans Réglages → Favoris. Pas dans Safari sur iPhone, seulement dans l'appli installée.

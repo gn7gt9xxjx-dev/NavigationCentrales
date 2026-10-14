@@ -328,6 +328,9 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
   width: 100%; height: 100%; max-width: none; max-height: none;
   border: 0; padding: 0;
   background: var(--bg); color: var(--ink);
+  /* iPhone : à l'ouverture du clavier, la page remonte avec l'éditeur et la liste
+     apparaissait dessous, à travers le clavier translucide. Ce fond prolongé la cache. */
+  box-shadow: 0 0 0 100vmax var(--bg);
 }
 .editor[open] { animation: up .28s cubic-bezier(.2, .8, .2, 1); }
 .editor-inner {
