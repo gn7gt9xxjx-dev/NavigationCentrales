@@ -2,6 +2,10 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.7
+- Réglages → À propos : « Nouveautés de chaque version » et « Rechercher une mise à jour » sont espacés, comme les boutons des favoris.
+- Les fenêtres (Réglages, fiche d'une centrale…) montent d'un seul bloc à l'ouverture : sur iPhone, les Réglages s'affichaient d'abord à moitié avant de prendre toute la hauteur.
+
 ## 1.10.6
 - Ajout d'une centrale : l'écran d'ajout n'est plus posé par-dessus la liste, il la remplace le temps de la saisie. Sur iPhone, le clavier s'ouvre et se ferme sans clignotement, et la liste retrouve exactement sa position au retour (elle ne défile plus en cachette).
 

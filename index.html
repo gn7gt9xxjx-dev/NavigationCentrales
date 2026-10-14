@@ -223,7 +223,7 @@
       </div>
       <p>Vos favoris sont gardés dans un fichier. Après une réinstallation ou sur un nouveau téléphone, rechargez-le pour les retrouver.</p>
       <p><strong>Avez-vous déjà un fichier de favoris ?</strong></p>
-      <div class="fav-actions">
+      <div class="set-actions">
         <button type="button" class="btn-primary wide" id="favFileLoad">Oui, charger mon fichier</button>
         <button type="button" class="btn-plain wide" id="favFileCreate">Non, créer le fichier</button>
       </div>
@@ -282,7 +282,7 @@
       <section>
         <h3>Favoris</h3>
         <p id="setFavInfo"></p>
-        <div class="fav-actions">
+        <div class="set-actions">
           <button type="button" class="btn-plain wide" id="setFavSave">Enregistrer le fichier de favoris</button>
           <button type="button" class="btn-plain wide" id="setFavLoad">Charger un fichier de favoris</button>
         </div>
@@ -314,8 +314,10 @@
       <section>
         <h3>À propos</h3>
         <p id="setVersion"></p>
-        <button type="button" class="btn-plain wide" id="setNews">Nouveautés de chaque version</button>
-        <button type="button" class="btn-plain wide" id="setCheckUpdate">Rechercher une mise à jour</button>
+        <div class="set-actions">
+          <button type="button" class="btn-plain wide" id="setNews">Nouveautés de chaque version</button>
+          <button type="button" class="btn-plain wide" id="setCheckUpdate">Rechercher une mise à jour</button>
+        </div>
         <small id="setUpdateMsg"></small>
       </section>
     </div>
