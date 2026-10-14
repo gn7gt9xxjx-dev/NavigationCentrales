@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.6
+- Ajout d'une centrale : l'écran d'ajout n'est plus posé par-dessus la liste, il la remplace le temps de la saisie. Sur iPhone, le clavier s'ouvre et se ferme sans clignotement, et la liste retrouve exactement sa position au retour (elle ne défile plus en cachette).
+
 ## 1.10.5
 - Ajout d'une centrale : la liste ne défile plus sous l'écran d'ajout quand on le fait glisser (son ascenseur apparaissait sur le côté).
 

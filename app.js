@@ -400,7 +400,8 @@ function toast(msg, undo = null, label = "Annuler", ms = undo ? 5000 : 1800) {
 // et la couleur de leur groupe. Toucher une centrale ouvre la feuille de lancement.
 // Hors ligne : le fond de carte manque, mais les centrales et la position restent affichées.
 function measureTop() {
-  document.documentElement.style.setProperty("--top-h", `${$(".top").offsetHeight}px`);
+  const h = $(".top").offsetHeight;
+  if (h) document.documentElement.style.setProperty("--top-h", `${h}px`);   // 0 : en-tête retiré pendant l'ajout
 }
 const upKey = (p) => p.up || "";
 
@@ -1166,32 +1167,27 @@ const Editor = (() => {
     coordsMsg.textContent = "Saisissez-les directement si vous les connaissez.";
     $("#fSearchGo").disabled = false;
     validate();
-    dlg.showModal();
+    // L'éditeur remplace la liste (voir .editor dans styles.css) : on retient où elle en était
+    listScroll = window.scrollY;
+    dlg.show();
+    window.scrollTo(0, 0);
     initMap();
     setTimeout(() => name.focus(), 300);
   }
 
   function close() { if (dlg.open) dlg.close(); }
 
-  // iPhone : l'éditeur suit la zone visible (au-dessus du clavier), voir .editor dans styles.css
-  const vv = window.visualViewport;
-  function fit() {
-    if (!vv || !dlg.open) return;
-    dlg.style.setProperty("--vv-top", `${vv.offsetTop}px`);
-    dlg.style.setProperty("--vv-h", `${vv.height}px`);
-    const f = document.activeElement;
-    if (f && f.matches("input") && dlg.contains(f)) f.closest(".field").scrollIntoView({ block: "nearest" });
-  }
-  vv?.addEventListener("resize", fit);
-  vv?.addEventListener("scroll", fit);
-  // Toucher le fond de l'éditeur ne ferme plus le clavier (iOS retire le focus du champ,
-  // le clavier se ferme et l'écran saute). Les champs, boutons et la carte restent normaux.
+  let listScroll = 0;
+  dlg.addEventListener("close", () => {
+    void document.body.offsetHeight;   // la liste est de nouveau dans la page
+    measureTop();
+    window.scrollTo(0, listScroll);
+  });
+  dlg.addEventListener("cancel", (e) => { e.preventDefault(); close(); });
+  // Toucher le fond de l'éditeur ne ferme pas le clavier (fermeture par « ✓ » au-dessus du clavier).
+  // Les champs, boutons et la carte restent normaux.
   dlg.addEventListener("mousedown", (e) => {
     if (!e.target.closest("input, select, textarea, button, a, label, .map-wrap, .results")) e.preventDefault();
-  });
-  dlg.addEventListener("close", () => {
-    dlg.style.removeProperty("--vv-top");
-    dlg.style.removeProperty("--vv-h");
   });
 
   // Événements
@@ -1238,7 +1234,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.5";
+const APP_VERSION = "1.10.6";
 
 async function renderVersion() {
   let cache = "";
