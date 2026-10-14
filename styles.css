@@ -191,7 +191,9 @@ mark { background: none; color: var(--sign); }
 }
 /* Fenêtre plus haute que l'écran (Réglages sur un petit iPhone…) : elle défile */
 .sheet-body { max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; }
-.sheet[open] .sheet-body { animation: up .26s cubic-bezier(.2, .8, .2, 1); }
+/* La fenêtre entière monte, pas la zone qui défile : sur iPhone, animer un bloc qui défile
+   l'affichait d'abord à moitié (Réglages) avant de le dessiner en entier. */
+.sheet[open] { animation: up .26s cubic-bezier(.2, .8, .2, 1); }
 .sheet[open]::backdrop { animation: fade .2s ease-out; }
 @keyframes up { from { transform: translateY(100%); } }
 @keyframes fade { from { opacity: 0; } }
@@ -657,7 +659,7 @@ body.map-view #install { display: none; }
 @media (prefers-reduced-motion: reduce) { .art-pin.tap::after { animation: none; } }
 
 /* ---------- Fichier de favoris ---------- */
-.fav-actions { display: grid; gap: 10px; margin: 12px 0; }
+.set-actions { display: grid; gap: 10px; margin: 12px 0; }
 .btn-primary.wide { width: 100%; }
 .fav-help { margin-top: 16px; font-size: 1rem; color: var(--muted); }
 body.map-view #favBackup { display: none; }
