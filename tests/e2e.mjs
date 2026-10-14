@@ -111,6 +111,22 @@ try {
   assert.ok(remote.includes('{"n": "TEST AJOUT", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors"}'));
   ok("ajout envoyé au dépôt (commit) avec son groupe, remarques existantes conservées");
 
+  // Codes Google (Plus Codes) et formats GPS dans l'écran d'ajout
+  await ctxA.route(/nominatim/, (r) => (r.request().url().includes("Arrens")
+    ? r.fulfill({ json: [{ lat: "42.9617", lon: "-0.2097", name: "Arrens-Marsous", display_name: "Arrens-Marsous, Hautes-Pyrénées" }], headers: { "access-control-allow-origin": "*" } })
+    : r.fallback()));
+  await A.click("#add"); await A.waitForTimeout(300);
+  await A.fill("#fCoords", "XQ5R+9M Arrens-Marsous"); await A.waitForTimeout(1600);
+  assert.match(await A.textContent("#fCoordsMsg"), /^42\.95843\d, -0\.20831\d · /);
+  await A.fill("#fCoords", "8FVC9G8F+6X");
+  assert.match(await A.textContent("#fCoordsMsg"), /^47\.36556\d, 8\.52493\d · /);
+  await A.fill("#fCoords", "N 45° 6.272' E 1° 57.215'");
+  assert.notEqual(await A.getAttribute("#fCoordsMsg", "class"), "error");
+  await A.fill("#fSearch", "XQ5R+9M, 65400 Arrens-Marsous"); await A.press("#fSearch", "Enter"); await A.waitForTimeout(600);
+  assert.match(await A.inputValue("#fCoords"), /^42\.95843\d, -0\.20831\d$/);
+  await A.click("#editorCancel"); await A.waitForTimeout(200);
+  ok("écran d'ajout : codes Google court (avec commune) et complet, degrés-minutes des GPS");
+
   // Autre téléphone
   const { page: B } = await phone("Pixel 7");
   assert.equal(await B.isVisible("#favFile"), true);
