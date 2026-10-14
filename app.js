@@ -1184,6 +1184,11 @@ const Editor = (() => {
   }
   vv?.addEventListener("resize", fit);
   vv?.addEventListener("scroll", fit);
+  // Toucher le fond de l'éditeur ne ferme plus le clavier (iOS retire le focus du champ,
+  // le clavier se ferme et l'écran saute). Les champs, boutons et la carte restent normaux.
+  dlg.addEventListener("mousedown", (e) => {
+    if (!e.target.closest("input, select, textarea, button, a, label, .map-wrap, .results")) e.preventDefault();
+  });
   dlg.addEventListener("close", () => {
     dlg.style.removeProperty("--vv-top");
     dlg.style.removeProperty("--vv-h");
@@ -1233,7 +1238,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.3";
+const APP_VERSION = "1.10.4";
 
 async function renderVersion() {
   let cache = "";
