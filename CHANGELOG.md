@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.10.4
+- Ajout d'une centrale : toucher le fond de l'écran pendant la saisie ne ferme plus le clavier (l'écran sautait). Pour le fermer : « ✓ » au-dessus du clavier.
+
 ## 1.10.3
 - Ajout d'une centrale sur iPhone : toucher le fond de l'écran pendant la saisie n'ouvre plus la fiche d'une centrale de la liste cachée dessous, ce qui interrompait la saisie.
 
