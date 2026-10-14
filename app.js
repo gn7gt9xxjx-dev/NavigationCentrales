@@ -753,6 +753,7 @@ async function activateToken() {
   renderSettings();
   toast("Édition activée");
   syncNow();
+  News.forEditors();
 }
 
 /* ===================== Balayage des récents ===================== */
@@ -1361,7 +1362,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.11.0";
+const APP_VERSION = "1.11.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1384,10 +1385,11 @@ const cmpVersion = (a, b) => {
 // elles restent dans CHANGELOG.md). Présentées une fois, juste après la mise à jour, puis
 // retrouvables dans Réglages → À propos. Ajouter une entrée (la plus récente en tête)
 // quand une version apporte quelque chose que l'utilisateur doit savoir utiliser.
-// `art` : illustration dessinée par NEWS_ART.
+// `art` : illustration dessinée par NEWS_ART. `editors: true` : présentée seulement aux téléphones
+// qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 const NEWS = [
   { v: "1.11.0", date: "14 octobre 2026", items: [
-    { art: "pluscode", title: "Les codes Google compris à l'ajout",
+    { art: "pluscode", editors: true, title: "Les codes Google compris à l'ajout",
       text: "Pour ajouter une centrale, collez le code Google d'un lieu (par exemple « XQ5R+9M Arrens-Marsous ») : le point s'affiche sur la carte.",
       steps: [
         "Dans Google Maps, touchez le lieu, puis copiez son code (4 caractères, un « + », puis 2 ou 3 autres).",
@@ -1541,11 +1543,21 @@ const News = (() => {
   // Au lancement : présente une seule fois ce qui est arrivé depuis la dernière version vue.
   // Première installation : rien à présenter. Utilisateur d'une version antérieure à cet
   // écran (aucune version vue mais des données sur le téléphone) : depuis la 1.6.
+  // Les fiches `editors` (ajout de centrales) ne sont présentées qu'avec le code d'édition ;
+  // sans lui, elles le seront à sa première validation (forEditors).
   function maybeShow(returning) {
     const seen = store.get("newsSeen", "") || (returning ? "1.6.0" : APP_VERSION);
     store.set("newsSeen", APP_VERSION);
-    const list = since(seen);
+    if (state.token) store.set("newsEditorsSeen", APP_VERSION);
+    const list = since(seen).filter((it) => !it.editors || state.token);
     if (list.length && !document.querySelector("dialog[open]")) open(list, 0, true);
+  }
+
+  // Code d'édition validé : fiches réservées à l'édition pas encore vues sur ce téléphone
+  function forEditors() {
+    const list = since(store.get("newsEditorsSeen", "") || "0").filter((it) => it.editors);
+    store.set("newsEditorsSeen", APP_VERSION);
+    if (list.length) open(list, 0, true);
   }
 
   function openAll() {
@@ -1581,7 +1593,7 @@ const News = (() => {
     open(entry.items.map((it) => ({ ...it, v: entry.v })), Number(b.dataset.i));
   });
 
-  return { maybeShow, openAll };
+  return { maybeShow, forEditors, openAll };
 })();
 
 /* ===================== Fichier de favoris ===================== */

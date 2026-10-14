@@ -95,6 +95,11 @@ try {
   await A.fill("#setToken", "good"); await A.click("#setTokenGo"); await A.waitForTimeout(500);
   assert.equal(await A.isVisible("#setControl"), true);
   assert.match(await A.getAttribute("#setControl", "href"), /^https:\/\/claude\.ai\/artifact\//);
+  await A.waitForSelector("#news[open]");
+  assert.equal(await A.textContent("#newsTitle"), "Les codes Google compris à l'ajout");
+  await A.click("#newsNext"); await A.waitForTimeout(200);
+  assert.equal(await A.isVisible("#news"), false);
+  ok("code validé : les nouveautés réservées à l'édition sont présentées");
   await A.click("#setClose");
   assert.equal(await A.isVisible("#add"), true);
   ok("code refusé puis accepté, bouton + visible, lien « Contrôle des positions GPS » dans les réglages");
@@ -238,7 +243,9 @@ try {
   ok("légende : masquer / réafficher une UP ; le choix Carte est mémorisé");
 
   // Nouveautés : présentées une seule fois après une mise à jour, puis dans les Réglages
-  const newsCount = (v) => C.evaluate((v) => NEWS.filter((e) => cmpVersion(e.v, v) > 0).reduce((n, e) => n + e.items.length, 0), v);
+  // Sans code d'édition (C), les fiches `editors` ne sont pas présentées au lancement
+  const newsCount = (v, all = false) => C.evaluate(([v, all]) => NEWS.filter((e) => cmpVersion(e.v, v) > 0)
+    .reduce((n, e) => n + e.items.filter((it) => all || !it.editors).length, 0), [v, all]);
   assert.equal(await C.isVisible("#news"), false);
   await C.evaluate(() => localStorage.setItem("newsSeen", JSON.stringify("1.7.2")));
   await C.reload(); await C.waitForSelector("#news[open]");
@@ -262,7 +269,8 @@ try {
   assert.equal(await C.isVisible("#news"), false);
   ok("nouveautés : utilisateur d'une version sans cet écran → depuis la 1.7, « Passer » ferme");
   await C.click("#openSettings"); await C.click("#setNews"); await C.waitForTimeout(300);
-  assert.equal(await C.$$eval(".nw-item", (b) => b.length), await newsCount("0"));
+  assert.equal(await C.$$eval(".nw-item", (b) => b.length), await newsCount("0", true));
+  assert.equal(await C.isVisible('.nw-item:has-text("codes Google")'), true);
   await C.click('.nw-item:has-text("Balayer")'); await C.waitForTimeout(300);
   assert.equal(await C.textContent("#newsTitle"), "Balayer une centrale récente");
   assert.equal(await C.textContent("#newsKicker"), "version 1.7.0");
@@ -270,7 +278,21 @@ try {
   assert.equal(await C.isVisible("#news"), false);
   assert.equal(await C.isVisible("#newsAll"), true);
   await C.click("#newsAllClose"); await C.click("#setClose");
-  ok("réglages → « Nouveautés de chaque version » : liste par version, toucher ouvre l'explication");
+  ok("réglages → « Nouveautés de chaque version » : liste par version (fiches d'édition comprises), toucher ouvre l'explication");
+
+  // Code d'édition saisi plus tard : fiches d'édition présentées une fois, à la première validation
+  await C.click("#openSettings");
+  await C.fill("#setToken", "good"); await C.click("#setTokenGo"); await C.waitForSelector("#news[open]");
+  assert.equal(await C.textContent("#newsTitle"), "Les codes Google compris à l'ajout");
+  assert.equal(await C.$$eval("#newsDots span", (d) => d.length), await newsCount("0", true) - await newsCount("0"));
+  await C.click("#newsNext"); await C.waitForTimeout(200);
+  await C.click("#setEditDisable"); await C.waitForTimeout(200);
+  await C.fill("#setToken", "good"); await C.click("#setTokenGo"); await C.waitForTimeout(600);
+  assert.equal(await C.isVisible("#news"), false);
+  await C.click("#setClose");
+  await C.reload(); await C.waitForSelector(".row"); await C.waitForTimeout(500);
+  assert.equal(await C.isVisible("#news"), false);
+  ok("code saisi plus tard : fiches d'édition présentées à la première validation, une seule fois");
 
   // Fichier de favoris : création (Android : téléchargement), mise à jour, rechargement après réinstallation
   const { ctx: ctxD, page: D } = await phone("Pixel 7");
