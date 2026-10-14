@@ -1171,6 +1171,22 @@ const Editor = (() => {
 
   function close() { if (dlg.open) dlg.close(); }
 
+  // iPhone : l'éditeur suit la zone visible (au-dessus du clavier), voir .editor dans styles.css
+  const vv = window.visualViewport;
+  function fit() {
+    if (!vv || !dlg.open) return;
+    dlg.style.setProperty("--vv-top", `${vv.offsetTop}px`);
+    dlg.style.setProperty("--vv-h", `${vv.height}px`);
+    const f = document.activeElement;
+    if (f && f.matches("input") && dlg.contains(f)) f.closest(".field").scrollIntoView({ block: "nearest" });
+  }
+  vv?.addEventListener("resize", fit);
+  vv?.addEventListener("scroll", fit);
+  dlg.addEventListener("close", () => {
+    dlg.style.removeProperty("--vv-top");
+    dlg.style.removeProperty("--vv-h");
+  });
+
   // Événements
   name.addEventListener("input", validate);
   search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); runSearch(); } });
@@ -1215,7 +1231,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.10.1";
+const APP_VERSION = "1.10.2";
 
 async function renderVersion() {
   let cache = "";
