@@ -37,16 +37,20 @@ const count = () => (remote.match(/"n":/g) || []).length;
 const initial = count();
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
-async function phone(device = "iPhone 15 Pro") {
+// standalone : appli lancée depuis l'écran d'accueil (iPhone). tutorial : garder le didacticiel
+// du premier lancement ouvert (sinon il est passé).
+async function phone(device = "iPhone 15 Pro", { standalone = false, tutorial = false } = {}) {
   const ctx = await browser.newContext({ ...devices[device], locale: "fr-FR", geolocation: { latitude: 45.2, longitude: 5.9 }, permissions: ["geolocation"] });
   await ctx.route(/api\.github\.com|raw\.githubusercontent\.com/, github);
   await ctx.route(/tile\.openstreetmap|arcgisonline|nominatim/, (r) => r.fulfill({ status: 204 }));
+  if (standalone) await ctx.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
   const page = await ctx.newPage();
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(e.message));
   await page.goto(URL_APP);
   await page.waitForSelector(".row");
   await page.waitForTimeout(800);
+  if (!tutorial && await page.isVisible("#news")) { await page.click("#newsSkip"); await page.waitForTimeout(300); }
   return { ctx, page };
 }
 const status = (p) => p.$eval("#status", (e) => e.textContent);
@@ -61,7 +65,7 @@ try {
   assert.equal(await A.isVisible("#add"), false);
   assert.equal(await A.isVisible("#news"), false);
   assert.equal(await A.isVisible("#favFile"), false);   // Safari sur iPhone : seulement dans l'appli installée
-  ok("lecteur : liste à jour, pas de bouton +, pas de nouveautés à la première installation, pas de question sur les favoris dans Safari");
+  ok("lecteur : liste à jour, pas de bouton +, ni didacticiel ni question sur les favoris dans Safari");
   {
     const { ctx, page } = await phone();
     assert.equal(await page.isVisible("#install"), true);
@@ -69,10 +73,40 @@ try {
     assert.equal(await page.isVisible("#install"), false);
     await page.reload(); await page.waitForSelector(".row"); await page.waitForTimeout(500);
     assert.equal(await page.isVisible("#install"), false);
+    assert.equal(await page.isVisible("#news"), false);   // ni didacticiel ni nouveautés dans Safari
     assert.deepEqual(page.errors, []);
     await ctx.close();
   }
   ok("Safari sur iPhone : la croix « Déjà installée » masque le bandeau d'installation, même au lancement suivant");
+
+  // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
+  {
+    const { ctx, page } = await phone("Pixel 7", { tutorial: true });
+    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + e.items.filter((it) => !it.editors).length, 0));
+    assert.equal(await page.isVisible("#news"), true);
+    assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
+    assert.equal(await page.textContent("#newsTitle"), "Lancer la navigation, même sans réseau");
+    assert.equal(await page.$$eval("#newsDots span", (d) => d.length), pages);
+    assert.equal(await page.isVisible("#favFile"), false);
+    for (let i = 1; i < pages; i++) await page.click("#newsNext");
+    assert.equal(await page.textContent("#newsNext"), "Compris");
+    assert.equal(await page.isVisible("#newsWhere"), true);
+    await page.click("#newsNext"); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#news"), false);
+    assert.equal(await page.isVisible("#favFile"), true);   // la question des favoris vient après
+    await page.click("#favFileLater");
+    await page.reload(); await page.waitForSelector(".row"); await page.waitForTimeout(500);
+    assert.equal(await page.isVisible("#news"), false);
+    assert.deepEqual(page.errors, []);
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await phone(undefined, { standalone: true, tutorial: true });
+    assert.equal(await page.isVisible("#news"), true);
+    assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
+    await ctx.close();
+  }
+  ok("didacticiel au premier lancement (Android, appli installée sur iPhone), puis la question des favoris ; plus ensuite");
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
   ok("recherche « st lau » → CNPE St Laurent");
