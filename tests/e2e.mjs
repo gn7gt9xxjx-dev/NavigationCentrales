@@ -390,7 +390,57 @@ try {
   await E.click("#setClose");
   ok("réglages → Favoris : état du fichier ; un fichier invalide est refusé sans rien changer");
 
-  const errors = [...A.errors, ...B.errors, ...C.errors, ...D.errors, ...E.errors];
+  // Ordinateur : navigation dans un nouvel onglet, fichier de favoris relié et réécrit sur place
+  // (sélecteurs de fichiers du navigateur remplacés par un faux fichier en mémoire)
+  const ctxF = await browser.newContext({ locale: "fr-FR" });
+  await ctxF.route(/api\.github\.com|raw\.githubusercontent\.com/, github);
+  await ctxF.addInitScript(() => {
+    window.fakeFile = { text: null, writes: 0 };
+    const h = {
+      name: "NavigationCentrales-favoris.json",
+      queryPermission: async () => "granted",
+      requestPermission: async () => "granted",
+      getFile: async () => new File([window.fakeFile.text || ""], h.name),
+      createWritable: async () => ({ write: async (t) => { window.fakeFile.text = t; window.fakeFile.writes++; }, close: async () => {} }),
+    };
+    window.showSaveFilePicker = async () => h;
+    window.showOpenFilePicker = async () => [h];
+  });
+  const F = await ctxF.newPage();
+  F.errors = [];
+  F.on("pageerror", (e) => F.errors.push(e.message));
+  F.on("download", () => F.errors.push("téléchargement inattendu"));
+  await F.goto(URL_APP); await F.waitForSelector(".row"); await F.waitForTimeout(800);
+  if (await F.isVisible("#news")) { await F.click("#newsSkip"); await F.waitForTimeout(300); }
+  const fid = await F.evaluate(() => plants[0].id);
+  assert.equal(await F.isVisible("#favFile"), true);
+  await F.click("#favFileCreate"); await F.waitForTimeout(300);
+  assert.deepEqual(JSON.parse(await F.evaluate(() => fakeFile.text)).favoris, []);
+  await F.click(`.row[data-id="${fid}"]`); await F.waitForTimeout(300);
+  assert.equal(await F.getAttribute("#goWaze", "target"), "_blank");
+  assert.equal(await F.getAttribute("#goGmaps", "target"), "_blank");
+  await F.click("#close"); await F.waitForTimeout(200);
+  await E.click(".row"); await E.waitForTimeout(300);
+  assert.equal(await E.getAttribute("#goWaze", "target"), null);   // Android : inchangé
+  await E.click("#close"); await E.waitForTimeout(200);
+  ok("ordinateur : Waze et Google Maps s'ouvrent dans un nouvel onglet (pas sur Android)");
+  await F.click(`.row[data-id="${fid}"]`); await F.waitForTimeout(300);
+  await F.click("#sheetStar"); await F.waitForTimeout(300);
+  assert.equal(await F.textContent("#toastMsg"), "Ajoutée aux favoris, fichier à jour");
+  await F.click("#close"); await F.waitForTimeout(200);
+  let fileF = JSON.parse(await F.evaluate(() => fakeFile.text));
+  assert.deepEqual(fileF.favoris.map((f) => `${f.n}|${f.lat}|${f.lon}`), [fid]);
+  assert.equal(await F.isVisible("#favBackup"), false);
+  await F.click(`.row[data-id="${fid}"]`); await F.waitForTimeout(300);
+  await F.click("#sheetStar"); await F.waitForTimeout(300);
+  await F.click("#close"); await F.waitForTimeout(200);
+  fileF = JSON.parse(await F.evaluate(() => fakeFile.text));
+  assert.deepEqual(fileF.favoris, []);
+  assert.equal(await F.evaluate(() => fakeFile.writes), 3);
+  ok("ordinateur : fichier de favoris choisi une fois, puis réécrit à chaque favori ajouté ou retiré (sans téléchargement)");
+  await ctxF.close();
+
+  const errors = [...A.errors, ...B.errors, ...C.errors, ...D.errors, ...E.errors, ...F.errors];
   assert.deepEqual(errors, []);
   ok("aucune erreur JavaScript");
   console.log("\nTous les tests passent.");
