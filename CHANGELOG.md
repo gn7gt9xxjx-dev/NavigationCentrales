@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.11.2
+- Safari sur iPhone : une croix « Déjà installée » masque le bandeau « Ajouter l'appli à l'écran d'accueil ». Safari ne peut pas savoir que l'appli est déjà installée ; le choix est retenu dans Safari (« Annuler » dans le message le fait revenir).
+
 ## 1.11.1
 - Nouveautés : la fiche « Les codes Google compris à l'ajout » n'est présentée qu'aux téléphones qui ont le code d'édition. Un code saisi plus tard la fait apparaître à sa première validation (une seule fois). Elle reste visible pour tous dans Réglages → « Nouveautés de chaque version ».
 

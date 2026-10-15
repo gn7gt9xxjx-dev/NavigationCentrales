@@ -138,6 +138,13 @@ main { max-width: 640px; margin: 0 auto; padding: 4px 16px 32px; }
   min-height: 44px; padding: 0 16px; border-radius: 10px; flex: none;
   background: var(--sign-ink); color: var(--sign); font-weight: 700; font-size: 1rem;
 }
+.update > span { flex: 1; }
+.update .close {
+  width: 44px; padding: 0; margin-left: -8px;
+  display: grid; place-items: center; background: none; color: var(--sign-ink);
+}
+.update .close[hidden] { display: none; }
+.update .close svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 
 .list { list-style: none; }
 .group-label {
