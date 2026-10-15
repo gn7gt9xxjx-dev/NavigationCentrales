@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.12.0
+- Didacticiel au premier lancement : les fiches des nouveautés (sauf celles de l'édition) sont présentées une fois, de « Lancer la navigation » au fichier de favoris, avant la question sur le fichier de favoris. Ensuite, elles restent dans Réglages → « Nouveautés de chaque version ». Sur iPhone, seulement dans l'appli installée (pas dans Safari).
+
 ## 1.11.2
 - Safari sur iPhone : une croix « Déjà installée » masque le bandeau « Ajouter l'appli à l'écran d'accueil ». Safari ne peut pas savoir que l'appli est déjà installée ; le choix est retenu dans Safari (« Annuler » dans le message le fait revenir).
 

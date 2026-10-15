@@ -1362,7 +1362,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.11.2";
+const APP_VERSION = "1.12.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1502,18 +1502,21 @@ const nbsp = (s) => s.replace(/« /g, "«\u00a0").replace(/ ([»:?!])/g, "\u00a0
 
 const News = (() => {
   const dlg = $("#news"), all = $("#newsAll");
-  let cards = [], index = 0, afterUpdate = false;
+  // mode : "update" (après une mise à jour), "welcome" (didacticiel du premier lancement)
+  // ou "" (fiche ouverte depuis les Réglages)
+  let cards = [], index = 0, mode = "";
 
   function show() {
     const c = cards[index], last = index === cards.length - 1;
-    $("#newsKicker").textContent = `${afterUpdate ? "Nouveau · " : ""}version ${c.v}`;
+    $("#newsKicker").textContent = mode === "welcome" ? "Bienvenue"
+      : `${mode === "update" ? "Nouveau · " : ""}version ${c.v}`;
     $("#newsArt").innerHTML = NEWS_ART[c.art]?.() || "";
     $("#newsArt").className = `news-art is-${c.art}`;
     $("#newsTitle").textContent = c.title;
     $("#newsText").textContent = nbsp([c.text, c.note].filter(Boolean).join(" "));
     $("#newsSteps").innerHTML = (c.steps || []).map((s) => `<li>${escapeHtml(nbsp(s))}</li>`).join("");
     $("#newsSteps").hidden = !c.steps;
-    $("#newsWhere").hidden = !(afterUpdate && last);
+    $("#newsWhere").hidden = !(mode && last);
     $("#newsSkip").hidden = last;
     $("#newsPrev").style.visibility = index ? "visible" : "hidden";
     $("#newsDots").style.visibility = cards.length < 2 ? "hidden" : "visible";
@@ -1523,8 +1526,8 @@ const News = (() => {
     dlg.querySelector(".sheet-body").scrollTop = 0;
   }
 
-  function open(list, start = 0, fromUpdate = false) {
-    cards = list; index = start; afterUpdate = fromUpdate;
+  function open(list, start = 0, how = "") {
+    cards = list; index = start; mode = how;
     show();
     if (!dlg.open) dlg.showModal();
   }
@@ -1541,23 +1544,27 @@ const News = (() => {
     .flatMap((e) => e.items.map((it) => ({ ...it, v: e.v })));
 
   // Au lancement : présente une seule fois ce qui est arrivé depuis la dernière version vue.
-  // Première installation : rien à présenter. Utilisateur d'une version antérieure à cet
-  // écran (aucune version vue mais des données sur le téléphone) : depuis la 1.6.
+  // Première installation : didacticiel (toutes les fiches, de la plus ancienne à la plus
+  // récente), une seule fois ; pas dans Safari sur iPhone, l'appli installée a son propre
+  // stockage et le présentera à son premier lancement. Utilisateur d'une version antérieure
+  // à cet écran (aucune version vue mais des données sur le téléphone) : depuis la 1.6.
   // Les fiches `editors` (ajout de centrales) ne sont présentées qu'avec le code d'édition ;
   // sans lui, elles le seront à sa première validation (forEditors).
   function maybeShow(returning) {
-    const seen = store.get("newsSeen", "") || (returning ? "1.6.0" : APP_VERSION);
+    const first = !store.get("newsSeen", "") && !returning;
+    if (first && isApple && !isStandalone) return store.set("newsSeen", APP_VERSION);
+    const seen = store.get("newsSeen", "") || (returning ? "1.6.0" : "0");
     store.set("newsSeen", APP_VERSION);
     if (state.token) store.set("newsEditorsSeen", APP_VERSION);
     const list = since(seen).filter((it) => !it.editors || state.token);
-    if (list.length && !document.querySelector("dialog[open]")) open(list, 0, true);
+    if (list.length && !document.querySelector("dialog[open]")) open(list, 0, first ? "welcome" : "update");
   }
 
   // Code d'édition validé : fiches réservées à l'édition pas encore vues sur ce téléphone
   function forEditors() {
     const list = since(store.get("newsEditorsSeen", "") || "0").filter((it) => it.editors);
     store.set("newsEditorsSeen", APP_VERSION);
-    if (list.length) open(list, 0, true);
+    if (list.length) open(list, 0, "update");
   }
 
   function openAll() {
