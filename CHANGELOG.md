@@ -2,6 +2,13 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.12.2
+- Android (Chrome 132 ou plus récent) : le fichier de favoris est relié comme sur ordinateur. On choisit une fois où le créer (ou on charge l'existant), puis il est réécrit sur place à chaque favori ajouté ou retiré, sans nouvelle copie dans Téléchargements. Si le navigateur ne le permet pas (ancien Chrome, Firefox…), ou refuse d'écrire dans le fichier choisi, retour au téléchargement comme avant. iPhone : inchangé.
+
+## 1.12.1
+- Ordinateur : Waze et Google Maps s'ouvrent dans un nouvel onglet, l'appli reste ouverte dans le sien. Rien ne change sur iPhone et Android.
+- Ordinateur (Chrome, Edge) : le fichier de favoris n'est plus téléchargé à nouveau à chaque enregistrement. On choisit une fois où le créer (ou on charge le fichier existant), puis il est réécrit sur place à chaque favori ajouté ou retiré. Le navigateur demande l'autorisation de le modifier une fois par visite (« Autoriser lors de chaque visite » la donne pour de bon). Firefox, Safari et téléphones : inchangé.
+
 ## 1.12.0
 - Didacticiel au premier lancement : les fiches des nouveautés (sauf celles de l'édition) sont présentées une fois, de « Lancer la navigation » au fichier de favoris, avant la question sur le fichier de favoris. Ensuite, elles restent dans Réglages → « Nouveautés de chaque version ». Sur iPhone, seulement dans l'appli installée (pas dans Safari).
 

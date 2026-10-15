@@ -44,6 +44,8 @@ async function phone(device = "iPhone 15 Pro", { standalone = false, tutorial = 
   await ctx.route(/api\.github\.com|raw\.githubusercontent\.com/, github);
   await ctx.route(/tile\.openstreetmap|arcgisonline|nominatim/, (r) => r.fulfill({ status: 204 }));
   if (standalone) await ctx.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
+  // Chrome sans sélecteurs de fichiers (Android avant Chrome 132) : téléchargement du fichier de favoris
+  await ctx.addInitScript(() => { for (const k of ["showSaveFilePicker", "showOpenFilePicker"]) { delete window[k]; delete Window.prototype[k]; } });
   const page = await ctx.newPage();
   page.errors = [];
   page.on("pageerror", (e) => page.errors.push(e.message));
@@ -390,7 +392,74 @@ try {
   await E.click("#setClose");
   ok("réglages → Favoris : état du fichier ; un fichier invalide est refusé sans rien changer");
 
-  const errors = [...A.errors, ...B.errors, ...C.errors, ...D.errors, ...E.errors];
+  // Fichier de favoris relié (Chrome / Edge sur ordinateur, Chrome ≥ 132 sur Android) : choisi une
+  // fois, puis réécrit sur place. Sélecteurs du navigateur remplacés par un faux fichier en mémoire ;
+  // broken : le fichier choisi refuse l'écriture (retour au téléchargement).
+  async function linked(device, { broken = false } = {}) {
+    const ctx = await browser.newContext({ ...(device ? devices[device] : {}), locale: "fr-FR" });
+    await ctx.route(/api\.github\.com|raw\.githubusercontent\.com/, github);
+    await ctx.addInitScript((broken) => {
+      window.fakeFile = { text: null, writes: 0 };
+      const h = {
+        name: "NavigationCentrales-favoris.json",
+        queryPermission: async () => "granted",
+        requestPermission: async () => "granted",
+        getFile: async () => new File([window.fakeFile.text || ""], h.name),
+        createWritable: async () => {
+          if (broken) throw new DOMException("refusé", "NotAllowedError");
+          return { write: async (t) => { window.fakeFile.text = t; window.fakeFile.writes++; }, close: async () => {} };
+        },
+      };
+      window.showSaveFilePicker = async () => h;
+      window.showOpenFilePicker = async () => [h];
+    }, broken);
+    const page = await ctx.newPage();
+    page.errors = [];
+    page.on("pageerror", (e) => page.errors.push(e.message));
+    await page.goto(URL_APP); await page.waitForSelector(".row"); await page.waitForTimeout(800);
+    if (await page.isVisible("#news")) { await page.click("#newsSkip"); await page.waitForTimeout(300); }
+    return { ctx, page };
+  }
+  const linkedErrors = [];
+  for (const device of [null, "Pixel 7"]) {
+    const label = device ? "Android" : "ordinateur";
+    const { ctx, page: F } = await linked(device);
+    F.on("download", () => F.errors.push("téléchargement inattendu"));
+    const fid = await F.evaluate(() => plants[0].id);
+    assert.equal(await F.isVisible("#favFile"), true);
+    await F.click("#favFileCreate"); await F.waitForTimeout(300);
+    assert.deepEqual(JSON.parse(await F.evaluate(() => fakeFile.text)).favoris, []);
+    await F.click(`.row[data-id="${fid}"]`); await F.waitForTimeout(300);
+    // Ordinateur : nouvel onglet ; Android : inchangé (le lien ouvre l'appli Waze / Maps)
+    assert.equal(await F.getAttribute("#goWaze", "target"), device ? null : "_blank");
+    assert.equal(await F.getAttribute("#goGmaps", "target"), device ? null : "_blank");
+    await F.click("#sheetStar"); await F.waitForTimeout(300);
+    assert.equal(await F.textContent("#toastMsg"), "Ajoutée aux favoris, fichier à jour");
+    await F.click("#close"); await F.waitForTimeout(200);
+    let fileF = JSON.parse(await F.evaluate(() => fakeFile.text));
+    assert.deepEqual(fileF.favoris.map((f) => `${f.n}|${f.lat}|${f.lon}`), [fid]);
+    assert.equal(await F.isVisible("#favBackup"), false);
+    await F.click(`.row[data-id="${fid}"]`); await F.waitForTimeout(300);
+    await F.click("#sheetStar"); await F.waitForTimeout(300);
+    await F.click("#close"); await F.waitForTimeout(200);
+    fileF = JSON.parse(await F.evaluate(() => fakeFile.text));
+    assert.deepEqual(fileF.favoris, []);
+    assert.equal(await F.evaluate(() => fakeFile.writes), 3);
+    linkedErrors.push(...F.errors);
+    await ctx.close();
+    ok(`${label} : ${device ? "" : "navigation dans un nouvel onglet ; "}fichier de favoris choisi une fois, puis réécrit à chaque favori ajouté ou retiré (sans téléchargement)`);
+  }
+  {
+    const { ctx, page: G } = await linked("Pixel 7", { broken: true });
+    const [dl] = await Promise.all([G.waitForEvent("download"), G.click("#favFileCreate")]);
+    assert.equal(dl.suggestedFilename(), "NavigationCentrales-favoris.json");
+    assert.equal(await G.isVisible("#favBackup"), false);
+    linkedErrors.push(...G.errors);
+    await ctx.close();
+    ok("Android : fichier choisi mais impossible à modifier → téléchargement, comme avant");
+  }
+
+  const errors = [...A.errors, ...B.errors, ...C.errors, ...D.errors, ...E.errors, ...linkedErrors];
   assert.deepEqual(errors, []);
   ok("aucune erreur JavaScript");
   console.log("\nTous les tests passent.");
