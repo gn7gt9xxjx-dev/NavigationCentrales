@@ -52,10 +52,11 @@ const formatCoord = (v) => v.toFixed(5).replace(/0+$/, "").replace(/\.$/, "");
 
 const isApple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-// Ordinateur (ni iPhone/iPad, ni Android) : navigation dans un nouvel onglet, et fichier de favoris
-// relié (Chrome, Edge : mis à jour sur place au lieu d'être téléchargé à nouveau).
+// Ordinateur (ni iPhone/iPad, ni Android) : navigation dans un nouvel onglet.
 const isDesktop = !isApple && !/Android|Mobi/i.test(navigator.userAgent);
-const canLinkFile = isDesktop && "showSaveFilePicker" in window && "showOpenFilePicker" in window;
+// Fichier de favoris relié, mis à jour sur place au lieu d'être téléchargé à nouveau :
+// Chrome / Edge sur ordinateur, Chrome ≥ 132 sur Android (pas sur iPhone).
+const canLinkFile = !isApple && "showSaveFilePicker" in window && "showOpenFilePicker" in window;
 
 // Liens de navigation. Sur iPhone on passe par les schémas des applis :
 // ils s'ouvrent directement, sans réseau et sans passer par Safari.
@@ -1371,7 +1372,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.12.1";
+const APP_VERSION = "1.12.2";
 
 async function renderVersion() {
   let cache = "";
@@ -1622,16 +1623,18 @@ const News = (() => {
 // Android et ordinateur : téléchargement. Rechargement : sélecteur de fichier.
 // `favFile` (localStorage) = favoris contenus dans le dernier fichier enregistré ou chargé.
 // `favFileAsked` : la question « charger ou créer » n'est posée qu'une fois ; ensuite, Réglages → Favoris.
-// Ordinateur (Chrome, Edge : `canLinkFile`) : le fichier créé ou chargé reste relié à l'appli
+// Chrome / Edge sur ordinateur et Chrome récent sur Android (`canLinkFile`) : le fichier créé ou chargé reste relié à l'appli
 // (FileSystemFileHandle gardé dans IndexedDB) et il est réécrit sur place. Le navigateur demande
 // l'autorisation de le modifier à la première écriture de chaque visite (« Autoriser lors de
 // chaque visite » la donne pour de bon) ; ensuite chaque changement de favori le met à jour seul.
+// Si le navigateur refuse (sélecteurs présents mais inutilisables), retour au téléchargement.
 const FavFile = (() => {
   const NAME = "NavigationCentrales-favoris.json";
   const TYPES = [{ description: "Favoris Navigation Centrales", accept: { "application/json": [".json"] } }];
   const dlg = $("#favFile"), input = $("#favFileInput");
   let saved = store.get("favFile", null);   // { ids, at }
-  let handle = null;                        // fichier relié (ordinateur)
+  let handle = null;                        // fichier relié
+  let linkable = canLinkFile;
 
   // IndexedDB : le seul stockage qui garde un FileSystemFileHandle d'une visite à l'autre.
   function idb(mode, fn) {
@@ -1679,10 +1682,10 @@ const FavFile = (() => {
            `"favoris": [\n${favs.join(",\n")}\n]}\n`;
   }
 
-  // Appelée directement depuis un toucher : le menu Partager (et sur ordinateur, le choix de
-  // l'emplacement ou l'autorisation de modifier le fichier) l'exige.
+  // Appelée directement depuis un toucher : le menu Partager (et pour un fichier relié, le choix
+  // de l'emplacement ou l'autorisation de le modifier) l'exige.
   async function save() {
-    if (canLinkFile) return saveLinked();
+    if (linkable) return saveLinked();
     const ids = [...state.favs];
     const file = new File([content()], NAME, { type: "application/json" });
     if (dlg.open) dlg.close();
@@ -1711,6 +1714,7 @@ const FavFile = (() => {
   async function saveLinked() {
     const ids = [...state.favs];
     if (dlg.open) dlg.close();
+    const fresh = !handle;
     try {
       if (handle) {
         if (await handle.requestPermission({ mode: "readwrite" }) !== "granted") {
@@ -1723,8 +1727,13 @@ const FavFile = (() => {
       await write(ids);
     } catch (e) {
       if (e.name === "AbortError") { toast("Fichier de favoris non enregistré"); return false; }
-      // Fichier déplacé ou supprimé : on choisira un nouvel emplacement
       link(null);
+      if (fresh) {
+        // Le navigateur ne sait pas écrire dans le fichier choisi : téléchargement, comme avant
+        linkable = false;
+        return save();
+      }
+      // Fichier déplacé ou supprimé : on choisira un nouvel emplacement
       toast("Fichier de favoris introuvable", save, "Choisir");
       return false;
     }
@@ -1756,16 +1765,19 @@ const FavFile = (() => {
   }
 
   async function pick() {
-    if (!canLinkFile) {
+    let h;
+    if (linkable) {
+      try {
+        [h] = await window.showOpenFilePicker({ types: TYPES });
+      } catch (e) {
+        if (e.name === "AbortError") return;
+        linkable = false;   // sélecteur inutilisable : celui de la page, comme avant
+      }
+    }
+    if (!h) {
       input.value = "";
       input.click();
       return;
-    }
-    let h;
-    try {
-      [h] = await window.showOpenFilePicker({ types: TYPES });
-    } catch {
-      return;   // annulé
     }
     if (await load(await h.getFile())) link(h);
   }
@@ -1809,7 +1821,8 @@ const FavFile = (() => {
        "Les fois suivantes, enregistrez au même endroit et touchez « Remplacer »."]
     : canLinkFile
     ? ["Pour le créer : choisissez où l'enregistrer.",
-       "Il est ensuite mis à jour à chaque changement de favori (le navigateur demande une fois par visite l'autorisation de le modifier)."]
+       "Il est ensuite mis à jour à chaque changement de favori (le navigateur demande une fois par visite l'autorisation de le modifier).",
+       ...(isDesktop ? [] : ["Pour changer de téléphone, copiez-le sur le nouveau (Google Drive, câble…)."])]
     : ["Le fichier est enregistré dans « Téléchargements ».",
        "Pour changer de téléphone, copiez-le sur le nouveau (Google Drive, câble…)."])
     .map((s) => `<li>${escapeHtml(nbsp(s))}</li>`).join("");
