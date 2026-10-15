@@ -62,6 +62,17 @@ try {
   assert.equal(await A.isVisible("#news"), false);
   assert.equal(await A.isVisible("#favFile"), false);   // Safari sur iPhone : seulement dans l'appli installée
   ok("lecteur : liste à jour, pas de bouton +, pas de nouveautés à la première installation, pas de question sur les favoris dans Safari");
+  {
+    const { ctx, page } = await phone();
+    assert.equal(await page.isVisible("#install"), true);
+    await page.click("#installNo");
+    assert.equal(await page.isVisible("#install"), false);
+    await page.reload(); await page.waitForSelector(".row"); await page.waitForTimeout(500);
+    assert.equal(await page.isVisible("#install"), false);
+    assert.deepEqual(page.errors, []);
+    await ctx.close();
+  }
+  ok("Safari sur iPhone : la croix « Déjà installée » masque le bandeau d'installation, même au lancement suivant");
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
   ok("recherche « st lau » → CNPE St Laurent");

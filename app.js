@@ -1362,7 +1362,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.11.1";
+const APP_VERSION = "1.11.2";
 
 async function renderVersion() {
   let cache = "";
@@ -1744,8 +1744,13 @@ async function init() {
   News.maybeShow(returning);
   FavFile.maybeAsk();   // après les nouveautés, qui l'expliquent
 
-  // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation)
-  if (isApple && !isStandalone) $("#install").hidden = false;
+  // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation).
+  // Safari ne sait pas si l'appli est déjà sur l'écran d'accueil : la croix « Déjà installée »
+  // masque le bandeau pour de bon dans ce navigateur.
+  if (isApple && !isStandalone && !store.get("installDismissed", false)) {
+    $("#install").hidden = false;
+    $("#installNo").hidden = false;
+  }
 }
 
 /* ===================== Installation ===================== */
@@ -1770,6 +1775,14 @@ $("#installGo").addEventListener("click", async () => {
   } else {
     $("#installHelp").showModal();
   }
+});
+$("#installNo").addEventListener("click", () => {
+  store.set("installDismissed", true);
+  $("#install").hidden = true;
+  toast("Bandeau d'installation masqué", () => {
+    store.set("installDismissed", false);
+    $("#install").hidden = false;
+  });
 });
 $("#installHelpClose").addEventListener("click", () => $("#installHelp").close());
 $("#installHelp").addEventListener("click", (e) => { if (e.target === $("#installHelp")) $("#installHelp").close(); });
