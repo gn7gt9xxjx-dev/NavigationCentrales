@@ -1475,7 +1475,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.13.1";
+const APP_VERSION = "1.13.2";
 
 async function renderVersion() {
   let cache = "";
@@ -1501,10 +1501,12 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.13.2", date: "16 octobre 2026", fixes: [
+    "Petite carte de la fiche : plus de lignes claires entre les morceaux de carte.",
+  ] },
   { v: "1.13.1", date: "16 octobre 2026", fixes: [
     "Supprimer une centrale : la confirmation précise qu'elle disparaît pour tout le monde.",
     "Récents : le bouton « Supprimer » devient « Effacer » (il retire seulement des récents).",
-    "Petite carte de la fiche : plus de fine ligne entre les morceaux de carte.",
   ] },
   { v: "1.13.0", date: "16 octobre 2026", items: [
     { art: "swipeall", title: "Balayer n'importe quelle centrale",

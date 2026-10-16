@@ -214,9 +214,11 @@ mark { background: none; color: var(--sign); }
 /* Petite carte (fiche ouverte depuis la carte « Autour de moi ») */
 .sheet-map { position: relative; height: min(190px, 24dvh); margin-top: 14px; border-radius: 14px; overflow: hidden; background: var(--line); isolation: isolate; }
 .sheet-map .mk .pi { width: 30px; height: 30px; }
-/* iPhone : la fiche n'est pas toujours à un pixel entier, une fine ligne apparaissait entre deux
-   morceaux de carte. Chaque morceau déborde d'un pixel sur le suivant. */
-.sheet-map img.leaflet-tile { width: 257px !important; height: 257px !important; }
+/* iPhone : la fiche n'est pas toujours à un pixel entier, une fine ligne claire apparaissait entre
+   deux morceaux de carte. Leaflet les fusionne en `plus-lighter` (leurs bords qui se chevauchent
+   s'additionnent et éclaircissent) : ici fusion normale, et chaque morceau déborde d'un pixel
+   sur le suivant pour ne laisser aucun jour. (leaflet.css est chargé après : sélecteur plus précis.) */
+.sheet-map .leaflet-container img.leaflet-tile { mix-blend-mode: normal; width: 257px !important; height: 257px !important; }
 .star { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); flex: none; margin: -6px -6px 0 0; }
 .star svg { width: 26px; height: 26px; }
 .star[aria-pressed="true"] { color: var(--star); }

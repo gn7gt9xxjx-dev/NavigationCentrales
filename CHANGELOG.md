@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.13.2
+- Petite carte de la fiche : les lignes claires entre les morceaux de carte sont vraiment corrigées. Leaflet fusionne les morceaux en `plus-lighter` : leurs bords qui se chevauchent s'additionnent et éclaircissent (et le débord d'un pixel de la 1.13.1 les rendait plus visibles). Fusion normale pour cette carte (sélecteur plus précis que celui de leaflet.css, chargé après), débord d'un pixel conservé.
+
 ## 1.13.1
 - Suppression d'une centrale : la confirmation dit « Elle sera supprimée de la liste partagée, pour tout le monde. » et le bouton devient « Supprimer pour tous », au-dessus de « Annuler » (l'ancien texte parlait à tort de « ce téléphone »).
 - Récents : le bouton de balayage « Supprimer » devient « Effacer », pour ne pas le confondre avec la suppression d'une centrale (il la retire seulement des récents, avec « Annuler » dans le message).
