@@ -228,7 +228,7 @@ try {
   await A.click(".row"); await A.waitForTimeout(300);
   assert.equal(await A.isVisible("#sheetGroup"), true);
   assert.equal(await A.textContent("#sheetGroup"), "UP Alpes · GEH Ecrins Vercors");
-  assert.equal(await A.isVisible("#sheetMap"), false);   // pas depuis la liste
+  assert.equal(await A.isVisible("#sheetMap"), true);   // aussi depuis la liste
   assert.equal(await A.isVisible("#edit"), true);
   await A.click("#sheetStar"); await A.waitForTimeout(200);
   await A.click("#close"); await A.waitForTimeout(200);

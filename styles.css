@@ -211,7 +211,7 @@ mark { background: none; color: var(--sign); }
 /* UP · GEH, avec l'icône du groupe */
 .sheet-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
 .sheet-group .pi { width: 24px; height: 24px; }
-/* Petite carte (fiche ouverte depuis la carte « Autour de moi ») */
+/* Petite carte de la fiche */
 .sheet-map { position: relative; height: min(190px, 24dvh); margin-top: 14px; border-radius: 14px; overflow: hidden; background: var(--line); isolation: isolate; }
 .sheet-map .mk .pi { width: 30px; height: 30px; }
 /* iPhone : la fiche n'est pas toujours à un pixel entier, une fine ligne claire apparaissait entre
