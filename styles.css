@@ -214,6 +214,9 @@ mark { background: none; color: var(--sign); }
 /* Petite carte (fiche ouverte depuis la carte « Autour de moi ») */
 .sheet-map { position: relative; height: min(190px, 24dvh); margin-top: 14px; border-radius: 14px; overflow: hidden; background: var(--line); isolation: isolate; }
 .sheet-map .mk .pi { width: 30px; height: 30px; }
+/* iPhone : la fiche n'est pas toujours à un pixel entier, une fine ligne apparaissait entre deux
+   morceaux de carte. Chaque morceau déborde d'un pixel sur le suivant. */
+.sheet-map img.leaflet-tile { width: 257px !important; height: 257px !important; }
 .star { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); flex: none; margin: -6px -6px 0 0; }
 .star svg { width: 26px; height: 26px; }
 .star[aria-pressed="true"] { color: var(--star); }
@@ -330,7 +333,9 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
 .confirm::backdrop { background: var(--backdrop); }
 .confirm h2 { font-size: 1.375rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .confirm p { color: var(--muted); margin-top: 6px; font-size: 1rem; line-height: 1.35; }
-.confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+/* Boutons l'un sous l'autre (« Supprimer pour tous » est trop long pour deux colonnes), action en premier */
+.confirm-actions { display: grid; gap: 10px; margin-top: 18px; }
+.confirm-actions .btn-danger { order: -1; }
 .btn-plain, .btn-danger {
   height: 46px; border-radius: 12px; font-size: 1.0625rem; font-weight: 700;
 }

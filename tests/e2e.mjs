@@ -199,7 +199,11 @@ try {
   // Suppression + annulation
   await A.fill("#q", "test ajout"); await A.waitForTimeout(200);
   await A.click(".row"); await A.waitForTimeout(300);
-  await A.click("#remove"); await A.click("#confirmOk"); await A.waitForTimeout(2200);
+  await A.click("#remove"); await A.waitForTimeout(200);
+  assert.equal(count(), initial + 1);   // rien de supprimé avant la confirmation
+  assert.match(await A.textContent("#confirm p"), /pour tout le monde/);
+  assert.equal(await A.textContent("#confirmOk"), "Supprimer pour tous");
+  await A.click("#confirmOk"); await A.waitForTimeout(2200);
   assert.equal(count(), initial);
   await A.click("#toastAction"); await A.waitForTimeout(2500);
   assert.equal(count(), initial + 1);
@@ -291,12 +295,13 @@ try {
   assert.deepEqual(await recentIds(), ids);
   await swipe(`.swipe.recent[data-id="${ids[0]}"]`, -110);
   assert.equal(await C.isVisible(`.swipe.recent[data-id="${ids[0]}"] .swipe-del`), true);
+  assert.equal(await C.textContent(`.swipe.recent[data-id="${ids[0]}"] .swipe-del`), "Effacer");
   assert.equal(await C.isVisible("#sheet"), false);
   await C.click(`.swipe.recent[data-id="${ids[0]}"] .swipe-fav`); await C.waitForTimeout(500);
   assert.deepEqual(await stored("favs"), [ids[0]]);
   assert.equal(await C.textContent("#favCount"), "1");
   assert.deepEqual(await recentIds(), ids);
-  ok("récents : balayage à moitié → boutons Favori / Supprimer, Favori ajoute aux favoris");
+  ok("récents : balayage à moitié → boutons Favori / Effacer, Favori ajoute aux favoris");
   await swipe(`.swipe.recent[data-id="${ids[0]}"]`, -330);
   assert.deepEqual(await recentIds(), ids.slice(1));
   assert.deepEqual(await stored("recents"), ids.slice(1));
@@ -310,12 +315,12 @@ try {
   assert.deepEqual(await recentIds(), [ids[0], ids[2]]);
   await C.click(`.swipe.recent[data-id="${ids[2]}"] .row`); await C.waitForTimeout(300);
   assert.equal(await C.isVisible("#sheet"), true);
-  ok("récents : annulation, bouton Supprimer, simple toucher ouvre toujours la fiche");
+  ok("récents : annulation, bouton Effacer, simple toucher ouvre toujours la fiche");
   await C.click("#close"); await C.waitForTimeout(200);
   const azId = await C.evaluate(() => plants[1].id);
   await swipe(`.swipe:not(.recent)[data-id="${azId}"]`, -110);
   assert.equal(await C.isVisible(`.swipe:not(.recent)[data-id="${azId}"] .swipe-fav`), true);
-  assert.equal(await C.$$eval(`.swipe:not(.recent)[data-id="${azId}"] .swipe-actions button`, (b) => b.length), 1);   // ni Modifier (pas de code), ni Supprimer
+  assert.equal(await C.$$eval(`.swipe:not(.recent)[data-id="${azId}"] .swipe-actions button`, (b) => b.length), 1);   // ni Modifier (pas de code), ni Effacer
   await C.click(`.swipe:not(.recent)[data-id="${azId}"] .swipe-fav`); await C.waitForTimeout(500);
   assert.ok((await stored("favs")).includes(azId));
   await swipe(`.swipe:not(.recent)[data-id="${azId}"]`, -330);

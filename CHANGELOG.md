@@ -2,6 +2,11 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.13.1
+- Suppression d'une centrale : la confirmation dit « Elle sera supprimée de la liste partagée, pour tout le monde. » et le bouton devient « Supprimer pour tous », au-dessus de « Annuler » (l'ancien texte parlait à tort de « ce téléphone »).
+- Récents : le bouton de balayage « Supprimer » devient « Effacer », pour ne pas le confondre avec la suppression d'une centrale (il la retire seulement des récents, avec « Annuler » dans le message).
+- Petite carte de la fiche (depuis la carte « Autour de moi ») : les morceaux de carte se chevauchent d'un pixel, plus de fine ligne claire entre eux sur iPhone.
+
 ## 1.13.0
 - **Balayage de toutes les lignes** (A–Z, « Autour de moi », « Favoris », résultats de recherche), plus seulement des récents : bouton « Favori ». « Supprimer » et le balayage à fond restent réservés aux récents (les retirer des récents). Les boutons sont créés au début du geste.
 - **Modifier une centrale** (avec le code d'édition) : bouton « Modifier » en balayant la ligne, ou en bas de la fiche. Même écran que l'ajout, rempli : nom, position (carte, coordonnées GPS ou code Google), UP et GEH, informations (champ `note`, affiché en orange). Envoyé comme une opération `edit` (commit « Modification de … ») ; favoris et récents suivent la centrale si son nom ou sa position change. « Annuler » dans le message pour revenir en arrière.
