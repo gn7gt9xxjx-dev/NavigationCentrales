@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.14.1
+- Icône des barrages (hydraulique) : une roue de turbine vue de dessus (pales incurvées dans leur ceinture) au-dessus de l'eau, comme sur l'ancienne carte Google, au lieu de rayons qui faisaient penser à un soleil sur la mer.
+
 ## 1.14.0
 - Petite carte de l'emplacement dans **toutes les fiches** (A–Z, « Autour de moi », « Favoris », recherche, récents), plus seulement depuis la carte « Autour de moi ». Toujours masquée sans réseau.
 
