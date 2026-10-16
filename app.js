@@ -223,7 +223,7 @@ const ICON_EDIT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L
 const groupLabel = (p) => [p.up, p.geh].filter(Boolean).join(" · ");
 
 // Chaque ligne se balaie vers la gauche (voir « Balayage des lignes ») ; `recent` : ligne des
-// « Récents », qui a aussi « Supprimer » (la retirer des récents).
+// « Récents », qui a aussi « Effacer » (la retirer des récents).
 function rowHtml(p, tokens, recent = false, icon = false) {
   let meta = "";
   if (state.pos) {
@@ -832,7 +832,7 @@ async function activateToken() {
 /* ===================== Balayage des lignes ===================== */
 
 // Comme dans les listes de l'iPhone : balayer une ligne vers la gauche révèle « Favori »,
-// « Modifier » (avec le code d'édition) et, pour les récents, « Supprimer » ; balayer à fond
+// « Modifier » (avec le code d'édition) et, pour les récents, « Effacer » ; balayer à fond
 // une ligne des récents la retire des récents (sans toucher aux favoris). Les boutons sont
 // créés au début du geste (pas dans chacune des ~600 lignes). Pointer events +
 // `touch-action: pan-y` : le défilement vertical reste au navigateur, le geste horizontal nous revient.
@@ -849,7 +849,7 @@ function swipeActions(li) {
   li.insertAdjacentHTML("afterbegin", `<div class="swipe-actions">${
     btn(`swipe-fav${fav ? " on" : ""}`, "fav", ICON_STAR_BIG, fav ? "Retirer" : "Favori")}${
     state.token ? btn("swipe-edit", "edit", ICON_EDIT, "Modifier") : ""}${
-    li.classList.contains("recent") ? btn("swipe-del", "del", ICON_TRASH, "Supprimer") : ""}</div>`);
+    li.classList.contains("recent") ? btn("swipe-del", "del", ICON_TRASH, "Effacer") : ""}</div>`);
 }
 const swipeWidth = (li) => li.querySelectorAll(".swipe-actions button").length * SWIPE_BTN;
 // Balayage à fond (récents seulement) : au-delà des boutons, et d'au moins 60 % de la ligne
@@ -1475,7 +1475,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.13.0";
+const APP_VERSION = "1.13.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1501,12 +1501,17 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.13.1", date: "16 octobre 2026", fixes: [
+    "Supprimer une centrale : la confirmation précise qu'elle disparaît pour tout le monde.",
+    "Récents : le bouton « Supprimer » devient « Effacer » (il retire seulement des récents).",
+    "Petite carte de la fiche : plus de fine ligne entre les morceaux de carte.",
+  ] },
   { v: "1.13.0", date: "16 octobre 2026", items: [
     { art: "swipeall", title: "Balayer n'importe quelle centrale",
       text: "Plus seulement les récents : toutes les lignes se balaient, dans A–Z, « Autour de moi » et « Favoris ».",
       steps: [
         "Balayez une ligne vers la gauche : bouton « Favori ».",
-        "Dans « Récents », « Supprimer » la retire des récents, comme avant.",
+        "Dans « Récents », « Effacer » la retire des récents.",
       ] },
     { art: "mapsheet", title: "La fiche de la centrale sur la carte",
       text: "Touchez une centrale sur la carte : sa fiche montre son emplacement de près, avec son UP et son GEH.",
@@ -1623,7 +1628,7 @@ const NEWS = [
     { art: "swipe", title: "Balayer une centrale récente",
       text: "Les « Récents » sont en haut de la liste A–Z.",
       steps: [
-        "Balayez une ligne vers la gauche, à moitié : boutons « Favori » et « Supprimer ».",
+        "Balayez une ligne vers la gauche, à moitié : boutons « Favori » et « Effacer ».",
         "Balayez-la à fond : elle quitte les récents (elle reste dans les favoris).",
         "Une erreur ? Touchez « Annuler » dans le message en bas.",
       ] },
@@ -1698,7 +1703,7 @@ const NEWS_ART = {
   },
   swipe: () => `<p class="art-label">Récents</p><div class="art-card">
       <div class="art-swipe"><div class="art-actions">
-        <span class="swipe-fav">${ICON_STAR_BIG}Favori</span><span class="swipe-del">${ICON_TRASH}Supprimer</span>
+        <span class="swipe-fav">${ICON_STAR_BIG}Favori</span><span class="swipe-del">${ICON_TRASH}Effacer</span>
       </div><div class="art-row"><span><b>VILLEFRANCHE DE CONFLENT</b><small>12 km SE</small></span></div>
       <span class="art-finger"></span></div>
       <div class="art-row"><span><b>CHEYLAS</b><small>18 km NE</small></span></div>
