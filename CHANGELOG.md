@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.14.0
+- Petite carte de l'emplacement dans **toutes les fiches** (A–Z, « Autour de moi », « Favoris », recherche, récents), plus seulement depuis la carte « Autour de moi ». Toujours masquée sans réseau.
+
 ## 1.13.2
 - Petite carte de la fiche : les lignes claires entre les morceaux de carte sont vraiment corrigées. Leaflet fusionne les morceaux en `plus-lighter` : leurs bords qui se chevauchent s'additionnent et éclaircissent (et le débord d'un pixel de la 1.13.1 les rendait plus visibles). Fusion normale pour cette carte (sélecteur plus précis que celui de leaflet.css, chargé après), débord d'un pixel conservé.
 

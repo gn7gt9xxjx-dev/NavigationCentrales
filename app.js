@@ -341,8 +341,7 @@ function locate() {
 
 const sheet = $("#sheet");
 
-// `map` : ouverte depuis la carte « Autour de moi » → petite carte centrée sur la centrale
-function openSheet(p, { map = false } = {}) {
+function openSheet(p) {
   // iPhone, clavier ouvert : un toucher sur le fond de l'éditeur peut atteindre la liste cachée dessous
   if ($("#editor").open) return;
   state.current = p;
@@ -369,13 +368,13 @@ function openSheet(p, { map = false } = {}) {
   // Ordinateur : Waze / Google Maps dans un nouvel onglet, l'appli reste ouverte dans le sien
   if (isDesktop) for (const el of ["#goWaze", "#goGmaps", "#goPlans"]) Object.assign($(el), { target: "_blank", rel: "noopener" });
   $("#offlineHint").hidden = navigator.onLine;
-  $("#sheetMap").hidden = !(map && navigator.onLine);   // sans réseau, pas de fond de carte
+  $("#sheetMap").hidden = !navigator.onLine;   // petite carte centrée sur la centrale ; sans réseau, pas de fond de carte
   sheet.showModal();
   if (!$("#sheetMap").hidden) SheetMap.show(p);
 }
 
-// Petite carte de la fiche : l'emplacement de la centrale, avec le fond choisi sur la carte
-// « Autour de moi ». Zoom 15 : la centrale et ses abords (environ 1 km de large).
+// Petite carte de la fiche (toutes les fiches) : l'emplacement de la centrale, avec le fond
+// choisi sur la carte « Autour de moi ». Zoom 15 : la centrale et ses abords (environ 1 km de large).
 const SheetMap = (() => {
   let L = null, map = null, layers = null, marker = null, layerKey = "";
 
@@ -493,7 +492,7 @@ const NearMap = (() => {
         icon: L.divIcon({ className: "mk", html: `${iconOf(p)}<span class="mk-label">${escapeHtml(p.n)}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }),
         title: p.n, riseOnHover: true,
       });
-      m.on("click", () => openSheet(byId.get(p.id) || p, { map: true }));
+      m.on("click", () => openSheet(byId.get(p.id) || p));
       markers.addLayer(m);
     }
   }
@@ -1475,7 +1474,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.13.2";
+const APP_VERSION = "1.14.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1501,6 +1500,15 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.14.0", date: "16 octobre 2026", items: [
+    { art: "mapsheet", title: "La petite carte dans toutes les fiches",
+      text: "La fiche d'une centrale montre son emplacement de près, quelle que soit la liste d'où on l'ouvre.",
+      steps: [
+        "Touchez une centrale dans A–Z, « Autour de moi », « Favoris » ou une recherche.",
+        "La fiche s'ouvre avec la petite carte, puis Waze, Google Maps ou Plans.",
+      ],
+      note: "Sans réseau, la petite carte n'est pas affichée." },
+  ] },
   { v: "1.13.2", date: "16 octobre 2026", fixes: [
     "Petite carte de la fiche : plus de lignes claires entre les morceaux de carte.",
   ] },
