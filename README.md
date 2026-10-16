@@ -14,7 +14,7 @@ Webapp iPhone (PWA) pour lancer Waze, Google Maps ou Plans vers l'une des 584 ce
 - Sur la carte « Autour de moi », toucher une centrale ouvre sa fiche avec une petite carte de l'emplacement, son UP et son GEH.
 - Après chaque mise à jour, une courte présentation montre les nouvelles fonctions et comment s'en servir. Réglages → À propos liste tout ce qui a changé à chaque version (corrections comprises).
 - **Liste partagée** : la liste vit dans un dépôt séparé, [DataNavigationCentrales](https://github.com/gn7gt9xxjx-dev/DataNavigationCentrales) (`data/centrales.json`). Chaque téléphone récupère la dernière version dès qu'il a du réseau, et garde la précédente pour fonctionner hors ligne.
-- **Ajouter / modifier / supprimer une centrale** (avec un code d'édition) : nom, position, UP et GEH, GU, informations affichées en orange ; : carte plan ou satellite, recherche de lieu, saisie directe des coordonnées GPS (décimales, degrés-minutes-secondes ou lien Google Maps), alerte si une centrale existe déjà à moins d'1 km, suppression avec confirmation puis « Annuler ». Chaque modification devient un commit dans le dépôt de données (historique et retour arrière possibles). Hors réseau, les modifications attendent et partent au retour du réseau.
+- **Ajouter / modifier / supprimer une centrale** (avec un code d'édition) : nom, position, UP et GEH, informations affichées en orange ; carte plan ou satellite, recherche de lieu, saisie directe des coordonnées GPS (décimales, degrés-minutes-secondes ou lien Google Maps), alerte si une centrale existe déjà à moins d'1 km, suppression avec confirmation puis « Annuler ». Chaque modification devient un commit dans le dépôt de données (historique et retour arrière possibles). Hors réseau, les modifications attendent et partent au retour du réseau.
 
 ## Code d'édition
 
@@ -43,7 +43,7 @@ Donnez ce code uniquement aux personnes qui doivent pouvoir modifier la liste. P
 
 ## Modifier la liste à la main
 
-La liste est dans le dépôt DataNavigationCentrales, fichier `data/centrales.json` (une ligne par centrale : nom `n`, latitude `lat`, longitude `lon` ; facultatifs : `up`, `geh`, `gu`, région `r`, remarque `note`). Les téléphones récupèrent les changements automatiquement. La copie `data/centrales.json` de ce dépôt n'est qu'une liste de secours embarquée (premier lancement sans réseau).
+La liste est dans le dépôt DataNavigationCentrales, fichier `data/centrales.json` (une ligne par centrale : nom `n`, latitude `lat`, longitude `lon` ; facultatifs : `up`, `geh`, région `r`, remarque `note`). Les téléphones récupèrent les changements automatiquement. La copie `data/centrales.json` de ce dépôt n'est qu'une liste de secours embarquée (premier lancement sans réseau).
 Pour une modification du code ou du design, **changer `VERSION` dans `sw.js`** pour que les téléphones téléchargent la nouvelle version.
 
 `tools/extract.py` régénère la liste à partir de l'ancienne page (`source/navigation-centrales-original.html`).

@@ -208,7 +208,7 @@ mark { background: none; color: var(--sign); }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .sheet-head h2 { font-size: 1.75rem; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
 .sheet-meta { color: var(--muted); font-size: 1rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
-/* UP · GEH · GU, avec l'icône du groupe */
+/* UP · GEH, avec l'icône du groupe */
 .sheet-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
 .sheet-group .pi { width: 24px; height: 24px; }
 /* Petite carte (fiche ouverte depuis la carte « Autour de moi ») */

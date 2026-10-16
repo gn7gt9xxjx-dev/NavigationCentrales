@@ -35,7 +35,7 @@ const Sync = (() => {
   // Même mise en forme que tools/extract.py : une centrale par ligne (historique Git lisible).
   // Champs dans cet ordre, champs vides omis ; un champ inconnu (ajouté par une version plus
   // récente de l'appli) est conservé à la fin plutôt que perdu.
-  const KEYS = ["n", "lat", "lon", "up", "geh", "gu", "r", "note"];
+  const KEYS = ["n", "lat", "lon", "up", "geh", "r", "note"];
   function serialize(list) {
     return "[\n" + list.map((p) => {
       const keys = [...KEYS, ...Object.keys(p).filter((k) => !KEYS.includes(k))];

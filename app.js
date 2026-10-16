@@ -219,8 +219,8 @@ const ICON_STAR_BIG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 
 const ICON_TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const ICON_EDIT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>';
 
-// UP, GEH et GU d'une centrale, sur une ligne
-const groupLabel = (p) => [p.up, p.geh, p.gu].filter(Boolean).join(" · ");
+// UP et GEH d'une centrale, sur une ligne
+const groupLabel = (p) => [p.up, p.geh].filter(Boolean).join(" · ");
 
 // Chaque ligne se balaie vers la gauche (voir « Balayage des lignes ») ; `recent` : ligne des
 // « Récents », qui a aussi « Supprimer » (la retirer des récents).
@@ -666,9 +666,9 @@ function changed() {
 
 // Centrale telle qu'elle sera enregistrée (champs vides omis). `orig` : la centrale modifiée,
 // dont on garde les champs que l'écran ne connaît pas et la position exacte si elle n'a pas bougé.
-function plantItem({ n, lat, lon, up, geh, gu, note }, orig = null) {
+function plantItem({ n, lat, lon, up, geh, note }, orig = null) {
   const same = orig && lat === orig.lat && lon === orig.lon;
-  const item = { ...(orig ? rawOf(orig) : {}), n, lat: same ? lat : +lat.toFixed(6), lon: same ? lon : +lon.toFixed(6), up, geh, gu, note };
+  const item = { ...(orig ? rawOf(orig) : {}), n, lat: same ? lat : +lat.toFixed(6), lon: same ? lon : +lon.toFixed(6), up, geh, note };
   item.r = same ? orig.r : regionOf(item.lat, item.lon);
   for (const k of Object.keys(item)) if (item[k] == null || item[k] === "") delete item[k];
   return item;
@@ -1223,7 +1223,7 @@ const Editor = (() => {
   const name = $("#fName"), search = $("#fSearch"), coords = $("#fCoords");
   const results = $("#fResults"), save = $("#editorSave"), coordsMsg = $("#fCoordsMsg");
   const mapMsg = $("#mapMsg"), mapHint = $("#mapHint");
-  const groupSel = $("#fGroup"), gu = $("#fGu"), note = $("#fNote");
+  const groupSel = $("#fGroup"), note = $("#fNote");
   let L = null, map = null, marker = null, layers = {}, point = null, groupTouched = false;
   let editing = null;   // centrale modifiée (null : ajout)
 
@@ -1311,9 +1311,6 @@ const Editor = (() => {
     const opt = (up, geh) => `<option value="${escapeHtml(`${up}|${geh}`)}">${escapeHtml(geh || up)}</option>`;
     groupSel.innerHTML = '<option value="">Non classée</option>' + [...ups].map(([up, gehs]) =>
       `<optgroup label="${escapeHtml(up)}">${(gehs.size ? [...gehs] : [""]).map((geh) => opt(up, geh)).join("")}</optgroup>`).join("");
-    // GU déjà saisis, proposés pendant la frappe
-    $("#guList").innerHTML = [...new Set(plants.map((p) => p.gu).filter(Boolean))].sort()
-      .map((g) => `<option value="${escapeHtml(g)}">`).join("");
   }
 
   // Code Google saisi dans « Coordonnées GPS » : le champ garde le code, le message
@@ -1392,7 +1389,6 @@ const Editor = (() => {
     if (p) {
       name.value = p.n;
       groupSel.value = p.up ? `${p.up}|${p.geh || ""}` : "";
-      gu.value = p.gu || "";
       note.value = p.note || "";
       setPoint(p.lat, p.lon, { pan: false });
     }
@@ -1465,7 +1461,7 @@ const Editor = (() => {
     const n = name.value.trim();
     if (!n || !point) return;
     const [up, geh = ""] = groupSel.value ? groupSel.value.split("|") : [];
-    const item = plantItem({ n, lat: point.lat, lon: point.lon, up, geh, gu: gu.value.trim(), note: note.value.trim() }, editing);
+    const item = plantItem({ n, lat: point.lat, lon: point.lon, up, geh, note: note.value.trim() }, editing);
     close();
     if (!editing) { addPlant(item); toast(`« ${n} » ajoutée`); return; }
     if (Sync.serialize([item]) === Sync.serialize([rawOf(editing)])) { toast("Aucune modification"); return; }
@@ -1521,7 +1517,7 @@ const NEWS = [
       ],
       note: "Sans réseau, la petite carte n'est pas affichée." },
     { art: "edit", editors: true, title: "Modifier une centrale",
-      text: "Corrigez le nom, la position, l'UP, le GEH, le GU ou les informations d'une centrale, pour tout le monde.",
+      text: "Corrigez le nom, la position, l'UP, le GEH ou les informations d'une centrale, pour tout le monde.",
       steps: [
         "Balayez la ligne vers la gauche et touchez « Modifier » (ou « Modifier » en bas de la fiche).",
         "La position se change sur la carte, ou en collant des coordonnées GPS ou un code Google.",
@@ -1530,7 +1526,7 @@ const NEWS = [
       ] },
   ], fixes: [
     "Nouveautés : les corrections de chaque version sont aussi listées, en quelques mots.",
-    "Ajout d'une centrale : champs GU et informations.",
+    "Ajout d'une centrale : champ informations (affichées en orange).",
   ] },
   { v: "1.12.2", date: "15 octobre 2026", fixes: [
     "Android : le fichier de favoris est mis à jour sur place, comme sur ordinateur.",
@@ -1690,7 +1686,7 @@ const NEWS_ART = {
       </div><div class="art-row"><span><b>GU DE CASTILLON</b><small>12 km SE <em>Tête de GU</em></small></span></div>
       <span class="art-finger"></span></div>
     </div>
-    <div class="art-fields"><span>Nom, position, UP et GEH, GU</span><span class="art-btn">Enregistrer</span></div>`,
+    <div class="art-fields"><span>Nom, position, UP et GEH</span><span class="art-btn">Enregistrer</span></div>`,
   mapsheet: () => {
     const p = { up: "UP Alpes", geh: "GEH Ecrins Vercors" };
     return `<div class="art-sheet"><b>GRAND'MAISON</b>

@@ -246,12 +246,11 @@ try {
   assert.equal(await A.inputValue("#fCoords"), "45.500000, 6.500000");
   assert.equal(await A.isDisabled("#editorSave"), false);
   await A.fill("#fName", "TEST MODIF");
-  await A.fill("#fGu", "GU de Test");
   await A.fill("#fNote", "Tête de GU");
   await A.click("#editorSave"); await A.waitForTimeout(2500);
   assert.equal(count(), countBefore);
   assert.match(commits.at(-1), /^Modification de TEST AJOUT\n\n~ TEST AJOUT → TEST MODIF \(45\.5, 6\.5\)/);
-  assert.ok(remote.includes('{"n": "TEST MODIF", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors", "gu": "GU de Test", "note": "Tête de GU"}'));
+  assert.ok(remote.includes('{"n": "TEST MODIF", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors", "note": "Tête de GU"}'));
   assert.ok(!remote.includes("TEST AJOUT"));
   const newId = "TEST MODIF|45.5|6.5";
   assert.deepEqual(await A.evaluate(() => JSON.parse(localStorage.getItem("favs"))), [newId]);
