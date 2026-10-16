@@ -84,7 +84,7 @@ try {
   // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
   {
     const { ctx, page } = await phone("Pixel 7", { tutorial: true });
-    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + e.items.filter((it) => !it.editors).length, 0));
+    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + (e.items || []).filter((it) => !it.editors).length, 0));
     assert.equal(await page.isVisible("#news"), true);
     assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
     assert.equal(await page.textContent("#newsTitle"), "Lancer la navigation, même sans réseau");
@@ -144,6 +144,8 @@ try {
   assert.match(await A.getAttribute("#setControl", "href"), /^https:\/\/claude\.ai\/artifact\//);
   await A.waitForSelector("#news[open]");
   assert.equal(await A.textContent("#newsTitle"), "Les codes Google compris à l'ajout");
+  await A.click("#newsNext"); await A.waitForTimeout(200);
+  assert.equal(await A.textContent("#newsTitle"), "Modifier une centrale");
   await A.click("#newsNext"); await A.waitForTimeout(200);
   assert.equal(await A.isVisible("#news"), false);
   ok("code validé : les nouveautés réservées à l'édition sont présentées");
@@ -216,6 +218,59 @@ try {
   assert.ok(remote.includes("HORS LIGNE") && remote.includes("AUTRE"));
   ok("modification hors ligne envoyée au retour du réseau, sans écraser une modif concurrente");
 
+  // Modifier une centrale : balayage → « Modifier », écran d'ajout rempli, envoi, annulation
+  await A.fill("#q", "test ajout"); await A.waitForTimeout(200);
+  const oldId = await A.getAttribute(".row", "data-id"), countBefore = count();
+  await A.click(".row"); await A.waitForTimeout(300);
+  assert.equal(await A.isVisible("#sheetGroup"), true);
+  assert.equal(await A.textContent("#sheetGroup"), "UP Alpes · GEH Ecrins Vercors");
+  assert.equal(await A.isVisible("#sheetMap"), false);   // pas depuis la liste
+  assert.equal(await A.isVisible("#edit"), true);
+  await A.click("#sheetStar"); await A.waitForTimeout(200);
+  await A.click("#close"); await A.waitForTimeout(200);
+  {
+    const b = await A.locator(".swipe").first().boundingBox();
+    const x = b.x + b.width - 30, y = b.y + b.height / 2;
+    await A.mouse.move(x, y); await A.mouse.down();
+    for (let i = 1; i <= 12; i++) await A.mouse.move(x - (200 * i) / 12, y);
+    await A.mouse.up(); await A.waitForTimeout(600);
+  }
+  assert.equal(await A.isVisible(".swipe .swipe-edit"), true);
+  assert.equal(await A.isVisible(".swipe .swipe-del"), false);   // pas un récent
+  await A.click(".swipe .swipe-edit"); await A.waitForTimeout(400);
+  assert.equal(await A.isVisible("#editor"), true);
+  assert.equal(await A.textContent("#editorTitle"), "Modifier la centrale");
+  assert.equal(await A.textContent("#editorSave"), "Enregistrer");
+  assert.equal(await A.inputValue("#fName"), "TEST AJOUT");
+  assert.equal(await A.inputValue("#fGroup"), "UP Alpes|GEH Ecrins Vercors");
+  assert.equal(await A.inputValue("#fCoords"), "45.500000, 6.500000");
+  assert.equal(await A.isDisabled("#editorSave"), false);
+  await A.fill("#fName", "TEST MODIF");
+  await A.fill("#fNote", "Tête de GU");
+  await A.click("#editorSave"); await A.waitForTimeout(2500);
+  assert.equal(count(), countBefore);
+  assert.match(commits.at(-1), /^Modification de TEST AJOUT\n\n~ TEST AJOUT → TEST MODIF \(45\.5, 6\.5\)/);
+  assert.ok(remote.includes('{"n": "TEST MODIF", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors", "note": "Tête de GU"}'));
+  assert.ok(!remote.includes("TEST AJOUT"));
+  const newId = "TEST MODIF|45.5|6.5";
+  assert.deepEqual(await A.evaluate(() => JSON.parse(localStorage.getItem("favs"))), [newId]);
+  assert.equal(await A.isVisible("#editor"), false);
+  await A.fill("#q", "test modif"); await A.waitForTimeout(200);
+  assert.equal(await A.textContent(".row .tag.note"), "Tête de GU");
+  ok("modifier : balayage → « Modifier », écran rempli, envoi (commit « Modification de »), favori conservé");
+  await A.click("#toastAction"); await A.waitForTimeout(2500);
+  assert.ok(remote.includes('{"n": "TEST AJOUT", "lat": 45.5, "lon": 6.5, "up": "UP Alpes", "geh": "GEH Ecrins Vercors"}'));
+  assert.ok(!remote.includes("TEST MODIF"));
+  assert.deepEqual(await A.evaluate(() => JSON.parse(localStorage.getItem("favs"))), [oldId]);
+  await A.fill("#q", "test ajout"); await A.waitForTimeout(200);
+  await A.click(".row"); await A.waitForTimeout(300);
+  await A.click("#edit"); await A.waitForTimeout(400);
+  assert.equal(await A.textContent("#editorTitle"), "Modifier la centrale");
+  await A.click("#editorSave"); await A.waitForTimeout(300);
+  assert.equal(await A.textContent("#toastMsg"), "Aucune modification");
+  await A.fill("#q", "");
+  ok("modifier : « Annuler » revient en arrière ; « Modifier » dans la fiche ; rien de changé → rien d'envoyé");
+
   // Récents : balayage vers la gauche
   const { page: C } = await phone();
   const ids = await C.evaluate(() => {
@@ -223,8 +278,8 @@ try {
     localStorage.setItem("recents", JSON.stringify(ids));
     return ids;
   });
-  await C.reload(); await C.waitForSelector(".swipe");
-  const recentIds = () => C.$$eval(".swipe", (r) => r.map((x) => x.dataset.id));
+  await C.reload(); await C.waitForSelector(".swipe.recent");
+  const recentIds = () => C.$$eval(".swipe.recent", (r) => r.map((x) => x.dataset.id));
   const stored = (k) => C.evaluate((k) => JSON.parse(localStorage.getItem(k) || "[]"), k);
   async function swipe(sel, dx) {
     const b = await C.locator(sel).boundingBox();
@@ -234,15 +289,15 @@ try {
     await C.mouse.up(); await C.waitForTimeout(600);
   }
   assert.deepEqual(await recentIds(), ids);
-  await swipe(`.swipe[data-id="${ids[0]}"]`, -110);
-  assert.equal(await C.isVisible(`.swipe[data-id="${ids[0]}"] .swipe-del`), true);
+  await swipe(`.swipe.recent[data-id="${ids[0]}"]`, -110);
+  assert.equal(await C.isVisible(`.swipe.recent[data-id="${ids[0]}"] .swipe-del`), true);
   assert.equal(await C.isVisible("#sheet"), false);
-  await C.click(`.swipe[data-id="${ids[0]}"] .swipe-fav`); await C.waitForTimeout(500);
+  await C.click(`.swipe.recent[data-id="${ids[0]}"] .swipe-fav`); await C.waitForTimeout(500);
   assert.deepEqual(await stored("favs"), [ids[0]]);
   assert.equal(await C.textContent("#favCount"), "1");
   assert.deepEqual(await recentIds(), ids);
   ok("récents : balayage à moitié → boutons Favori / Supprimer, Favori ajoute aux favoris");
-  await swipe(`.swipe[data-id="${ids[0]}"]`, -330);
+  await swipe(`.swipe.recent[data-id="${ids[0]}"]`, -330);
   assert.deepEqual(await recentIds(), ids.slice(1));
   assert.deepEqual(await stored("recents"), ids.slice(1));
   assert.deepEqual(await stored("favs"), [ids[0]]);
@@ -250,15 +305,32 @@ try {
   ok("récents : balayage à fond → retirée des récents, reste dans les favoris");
   await C.click("#toastAction"); await C.waitForTimeout(300);
   assert.deepEqual(await recentIds(), ids);
-  await swipe(`.swipe[data-id="${ids[1]}"]`, -110);
-  await C.click(`.swipe[data-id="${ids[1]}"] .swipe-del`); await C.waitForTimeout(600);
+  await swipe(`.swipe.recent[data-id="${ids[1]}"]`, -110);
+  await C.click(`.swipe.recent[data-id="${ids[1]}"] .swipe-del`); await C.waitForTimeout(600);
   assert.deepEqual(await recentIds(), [ids[0], ids[2]]);
-  await C.click(`.swipe[data-id="${ids[2]}"] .row`); await C.waitForTimeout(300);
+  await C.click(`.swipe.recent[data-id="${ids[2]}"] .row`); await C.waitForTimeout(300);
   assert.equal(await C.isVisible("#sheet"), true);
   ok("récents : annulation, bouton Supprimer, simple toucher ouvre toujours la fiche");
+  await C.click("#close"); await C.waitForTimeout(200);
+  const azId = await C.evaluate(() => plants[1].id);
+  await swipe(`.swipe:not(.recent)[data-id="${azId}"]`, -110);
+  assert.equal(await C.isVisible(`.swipe:not(.recent)[data-id="${azId}"] .swipe-fav`), true);
+  assert.equal(await C.$$eval(`.swipe:not(.recent)[data-id="${azId}"] .swipe-actions button`, (b) => b.length), 1);   // ni Modifier (pas de code), ni Supprimer
+  await C.click(`.swipe:not(.recent)[data-id="${azId}"] .swipe-fav`); await C.waitForTimeout(500);
+  assert.ok((await stored("favs")).includes(azId));
+  await swipe(`.swipe:not(.recent)[data-id="${azId}"]`, -330);
+  assert.equal(await C.isVisible(`.swipe:not(.recent)[data-id="${azId}"] .row`), true);
+  assert.equal(await C.isVisible("#sheet"), false);
+  await C.click("#q"); await C.waitForTimeout(400);   // referme la ligne
+  ok("A–Z : toute ligne se balaie (Favori) ; balayer à fond ne supprime rien");
+  await C.fill("#q", "test ajout"); await C.waitForTimeout(200);
+  await C.click(".row"); await C.waitForTimeout(300);
+  assert.equal(await C.textContent("#sheetGroup"), "UP Alpes · GEH Ecrins Vercors");
+  assert.equal(await C.isVisible("#edit"), false);
 
   // Autour de moi : liste avec icônes, puis carte
   await C.click("#close"); await C.waitForTimeout(200);
+  await C.fill("#q", ""); await C.waitForTimeout(200);
   await C.click('[data-mode="near"]'); await C.waitForTimeout(500);
   assert.equal(await C.isVisible("#views"), true);
   assert.equal((await C.$$(".row.with-icon .pi")).length > 10, true);
@@ -271,11 +343,19 @@ try {
   ok("carte « Autour de moi » : toutes les centrales et la position affichées");
   await C.fill("#q", "cnpe"); await C.waitForTimeout(300);
   assert.equal(await markers(), await C.evaluate(() => plants.filter((p) => p.n.startsWith("CNPE")).length));
-  await C.click("#nmap .mk"); await C.waitForTimeout(300);
+  await C.click("#nmap .mk"); await C.waitForTimeout(600);
   assert.equal(await C.isVisible("#sheet"), true);
   assert.match(await C.textContent("#sheetName"), /^CNPE /);
+  assert.equal(await C.isVisible("#sheetGroup"), false);   // pas de groupe dans la liste de test
+  assert.equal(await C.isVisible("#sheetMap"), true);
+  assert.equal(await C.isVisible("#smap .mk .pi"), true);
   await C.click("#close"); await C.waitForTimeout(200);
-  ok("carte : la recherche filtre les centrales, toucher une centrale ouvre sa fiche");
+  await C.fill("#q", "test ajout"); await C.waitForTimeout(300);
+  await C.click("#nmap .mk"); await C.waitForTimeout(600);
+  assert.equal(await C.textContent("#sheetGroup"), "UP Alpes · GEH Ecrins Vercors");
+  assert.equal(await C.isVisible("#sheetMap"), true);
+  await C.click("#close"); await C.waitForTimeout(200);
+  ok("carte : la recherche filtre les centrales, toucher une centrale ouvre sa fiche avec la petite carte et son UP · GEH");
   await C.fill("#q", ""); await C.waitForTimeout(300);
   await C.click("#nmLegend"); await C.waitForTimeout(300);
   const before = await markers();
@@ -292,7 +372,7 @@ try {
   // Nouveautés : présentées une seule fois après une mise à jour, puis dans les Réglages
   // Sans code d'édition (C), les fiches `editors` ne sont pas présentées au lancement
   const newsCount = (v, all = false) => C.evaluate(([v, all]) => NEWS.filter((e) => cmpVersion(e.v, v) > 0)
-    .reduce((n, e) => n + e.items.filter((it) => all || !it.editors).length, 0), [v, all]);
+    .reduce((n, e) => n + (e.items || []).filter((it) => all || !it.editors).length, 0), [v, all]);
   assert.equal(await C.isVisible("#news"), false);
   await C.evaluate(() => localStorage.setItem("newsSeen", JSON.stringify("1.7.2")));
   await C.reload(); await C.waitForSelector("#news[open]");
@@ -317,21 +397,26 @@ try {
   ok("nouveautés : utilisateur d'une version sans cet écran → depuis la 1.7, « Passer » ferme");
   await C.click("#openSettings"); await C.click("#setNews"); await C.waitForTimeout(300);
   assert.equal(await C.$$eval(".nw-item", (b) => b.length), await newsCount("0", true));
+  assert.equal(await C.$$eval(".nw", (b) => b.length), await C.evaluate(() => NEWS.length));
+  assert.equal(await C.$$eval(".nw-fix", (b) => b.length), await C.evaluate(() => NEWS.reduce((n, e) => n + (e.fixes || []).length, 0)));
+  assert.equal(await C.$$eval(".nw-fix .chev", (b) => b.length), 0);
   assert.equal(await C.isVisible('.nw-item:has-text("codes Google")'), true);
-  await C.click('.nw-item:has-text("Balayer")'); await C.waitForTimeout(300);
+  await C.click('.nw-item:has-text("Balayer une centrale récente")'); await C.waitForTimeout(300);
   assert.equal(await C.textContent("#newsTitle"), "Balayer une centrale récente");
   assert.equal(await C.textContent("#newsKicker"), "version 1.7.0");
   await C.click("#newsNext"); await C.waitForTimeout(200);
   assert.equal(await C.isVisible("#news"), false);
   assert.equal(await C.isVisible("#newsAll"), true);
   await C.click("#newsAllClose"); await C.click("#setClose");
-  ok("réglages → « Nouveautés de chaque version » : liste par version (fiches d'édition comprises), toucher ouvre l'explication");
+  ok("réglages → « Nouveautés de chaque version » : toutes les versions, corrections sans flèche, toucher une fonction ouvre l'explication");
 
   // Code d'édition saisi plus tard : fiches d'édition présentées une fois, à la première validation
   await C.click("#openSettings");
   await C.fill("#setToken", "good"); await C.click("#setTokenGo"); await C.waitForSelector("#news[open]");
   assert.equal(await C.textContent("#newsTitle"), "Les codes Google compris à l'ajout");
   assert.equal(await C.$$eval("#newsDots span", (d) => d.length), await newsCount("0", true) - await newsCount("0"));
+  await C.click("#newsNext"); await C.waitForTimeout(200);
+  assert.equal(await C.textContent("#newsTitle"), "Modifier une centrale");
   await C.click("#newsNext"); await C.waitForTimeout(200);
   await C.click("#setEditDisable"); await C.waitForTimeout(200);
   await C.fill("#setToken", "good"); await C.click("#setTokenGo"); await C.waitForTimeout(600);

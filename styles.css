@@ -208,6 +208,12 @@ mark { background: none; color: var(--sign); }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .sheet-head h2 { font-size: 1.75rem; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
 .sheet-meta { color: var(--muted); font-size: 1rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+/* UP · GEH, avec l'icône du groupe */
+.sheet-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 1.0625rem; font-weight: 600; line-height: 1.25; }
+.sheet-group .pi { width: 24px; height: 24px; }
+/* Petite carte (fiche ouverte depuis la carte « Autour de moi ») */
+.sheet-map { position: relative; height: min(190px, 24dvh); margin-top: 14px; border-radius: 14px; overflow: hidden; background: var(--line); isolation: isolate; }
+.sheet-map .mk .pi { width: 30px; height: 30px; }
 .star { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); flex: none; margin: -6px -6px 0 0; }
 .star svg { width: 26px; height: 26px; }
 .star[aria-pressed="true"] { color: var(--star); }
@@ -232,6 +238,7 @@ mark { background: none; color: var(--sign); }
 .app.preferred { order: -1; }
 
 .sheet-foot { display: flex; justify-content: space-between; margin-top: 10px; }
+.sheet-edit { display: flex; gap: 18px; }
 body:not(.can-edit) .sheet-foot { justify-content: flex-end; }
 .link { color: var(--sign); font-weight: 600; font-size: 1.0625rem; padding: 10px 4px; }
 
@@ -264,7 +271,7 @@ body:not(.can-edit) .sheet-foot { justify-content: flex-end; }
 .add svg { stroke-width: 2.6; }
 .ghost { color: var(--ink); background: color-mix(in srgb, var(--line) 80%, transparent); }
 /* Lecture seule : pas d'ajout ni de suppression sans code d'édition */
-body:not(.can-edit) #add, body:not(.can-edit) #remove { display: none; }
+body:not(.can-edit) #add, body:not(.can-edit) #remove, body:not(.can-edit) #edit { display: none; }
 .status { padding: 6px 2px; white-space: nowrap; }
 .status.warn { color: var(--danger); }
 .tag.pending { color: var(--star); }
@@ -423,7 +430,8 @@ body:has(#editor[open]) { overflow: visible; }   /* même depuis la carte « Aut
   touch-action: pan-y;                    /* défilement vertical au navigateur, horizontal à l'appli */
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-.swipe .row { transform: translateX(var(--x, 0px)); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+.swipe .row { transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+.swipe.active .row { transform: translateX(var(--x, 0px)); }   /* seulement la ligne balayée */
 .swipe.dragging .row:active { background: none; }
 .swipe-actions {
   position: absolute; top: 0; right: 0; bottom: 0;
@@ -444,6 +452,7 @@ body:has(#editor[open]) { overflow: visible; }   /* même depuis la carte « Aut
 .swipe-fav svg path { fill: currentColor; stroke: none; }
 .swipe-fav.on svg path { fill: none; stroke: currentColor; }   /* déjà favori : étoile vide = retirer */
 .swipe-del { background: var(--swipe-del); color: #fff; }
+.swipe-edit { background: var(--sign); color: var(--sign-ink); }
 /* Balayage à fond : « Supprimer » occupe toute la place, collé à la ligne */
 .swipe.armed .swipe-fav { flex-grow: 0; }
 .swipe.armed .swipe-del { align-items: flex-start; padding-left: 22px; }
@@ -599,6 +608,27 @@ body.map-view #install { display: none; }
   45% { opacity: 1; transform: translateX(-136px); } 52%, 100% { opacity: 0; transform: translateX(-136px); }
 }
 
+/* Une seule action (« Favori ») : balayage de 68 px */
+.art-swipe.one .art-actions { width: 68px; }
+.art-swipe.one .art-row { transform: translateX(-68px); animation-name: art-swipe1; }
+.art-swipe.one .art-finger { animation-name: art-finger1; }
+@keyframes art-swipe1 { 0%, 15% { transform: none; } 45%, 85% { transform: translateX(-68px); } 100% { transform: none; } }
+@keyframes art-finger1 {
+  0%, 10% { opacity: 0; transform: none; } 15% { opacity: 1; transform: none; }
+  45% { opacity: 1; transform: translateX(-68px); } 52%, 100% { opacity: 0; transform: translateX(-68px); }
+}
+.art-fields {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--surface);
+  font-size: .9375rem; font-weight: 600; color: var(--muted); box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.art-fields .art-btn { background: var(--sign); color: var(--sign-ink); }
+.art-sheet { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.art-sheet > b { font-size: 1.1875rem; font-weight: 700; }
+.art-group { display: flex; align-items: center; gap: 6px; font-size: .9375rem; font-weight: 600; }
+.art-group .pi { width: 20px; height: 20px; }
+.art-minimap { position: relative; height: 76px; margin-top: 4px; border-radius: 10px; overflow: hidden; background: color-mix(in srgb, var(--gmaps) 13%, var(--surface)); }
+
 .news-art.is-map { justify-content: flex-start; padding-top: 12px; }
 .art-views {
   display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 9px;
@@ -663,6 +693,8 @@ body.map-view #install { display: none; }
 .nw-item > span { flex: 1; min-width: 0; }
 .nw-item b { display: block; font-size: 1.0625rem; font-weight: 600; }
 .nw-item small { margin-top: 2px; line-height: 1.3; }
+/* Correction : quelques mots, sans fiche (donc sans flèche) */
+.settings p.nw-fix { margin: 0; padding: 12px 2px; border-top: 1px solid var(--line); color: var(--ink); font-size: 1rem; line-height: 1.35; }
 @media (prefers-reduced-motion: reduce) { .art-pin.tap::after { animation: none; } }
 
 /* ---------- Fichier de favoris ---------- */
