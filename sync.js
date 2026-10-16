@@ -35,7 +35,7 @@ const Sync = (() => {
   // Même mise en forme que tools/extract.py : une centrale par ligne (historique Git lisible).
   // Champs dans cet ordre, champs vides omis ; un champ inconnu (ajouté par une version plus
   // récente de l'appli) est conservé à la fin plutôt que perdu.
-  const KEYS = ["n", "lat", "lon", "up", "geh", "r", "note"];
+  const KEYS = ["n", "lat", "lon", "up", "geh", "gu", "r", "note"];
   function serialize(list) {
     return "[\n" + list.map((p) => {
       const keys = [...KEYS, ...Object.keys(p).filter((k) => !KEYS.includes(k))];
@@ -60,6 +60,15 @@ const Sync = (() => {
     for (const op of ops) {
       if (op.op === "add" && !out.some((p) => idOf(p) === idOf(op.item))) out.push(op.item);
       if (op.op === "remove") out = out.filter((p) => idOf(p) !== op.id);
+      // Modification : la centrale `id` est remplacée. Déjà faite, ou centrale supprimée
+      // entre-temps : rien. Nouvel identifiant déjà présent : on ne garde que celui-là.
+      if (op.op === "edit") {
+        const i = out.findIndex((p) => idOf(p) === op.id);
+        if (i < 0) continue;
+        const id = idOf(op.item);
+        if (id !== op.id && out.some((p) => idOf(p) === id)) out.splice(i, 1);
+        else out[i] = op.item;
+      }
     }
     return out;
   }
@@ -98,18 +107,25 @@ const Sync = (() => {
 
   function commitMessage(ops, author) {
     const adds = ops.filter((o) => o.op === "add"), dels = ops.filter((o) => o.op === "remove");
+    const edits = ops.filter((o) => o.op === "edit");
+    const nameOf = (id) => id.split("|").slice(0, -2).join("|");
+    const plural = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
     let title;
     if (ops.length === 1) {
-      title = adds.length ? `Ajout de ${adds[0].item.n}` : `Suppression de ${dels[0].id.split("|")[0]}`;
+      title = adds.length ? `Ajout de ${adds[0].item.n}`
+        : edits.length ? `Modification de ${nameOf(edits[0].id)}`
+        : `Suppression de ${nameOf(dels[0].id)}`;
     } else {
       const parts = [];
-      if (adds.length) parts.push(`${adds.length} ajout${adds.length > 1 ? "s" : ""}`);
-      if (dels.length) parts.push(`${dels.length} suppression${dels.length > 1 ? "s" : ""}`);
-      title = `Centrales : ${parts.join(" et ")}`;
+      if (adds.length) parts.push(plural(adds.length, "ajout"));
+      if (edits.length) parts.push(plural(edits.length, "modification"));
+      if (dels.length) parts.push(plural(dels.length, "suppression"));
+      title = `Centrales : ${parts.slice(0, -1).join(", ")}${parts.length > 1 ? " et " : ""}${parts.at(-1)}`;
     }
     const lines = [
       ...adds.map((o) => `+ ${o.item.n} (${o.item.lat}, ${o.item.lon})`),
-      ...dels.map((o) => `- ${o.id.split("|")[0]}`),
+      ...edits.map((o) => `~ ${nameOf(o.id)}${nameOf(o.id) !== o.item.n ? ` → ${o.item.n}` : ""} (${o.item.lat}, ${o.item.lon})`),
+      ...dels.map((o) => `- ${nameOf(o.id)}`),
     ];
     return `${title}\n\n${lines.join("\n")}\n\nDepuis l'appli Centrales${author ? ` (par ${author})` : ""}`;
   }

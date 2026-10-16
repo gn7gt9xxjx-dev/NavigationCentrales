@@ -217,8 +217,14 @@ function highlight(p, tokens) {
 
 const ICON_STAR_BIG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+const ICON_EDIT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>';
 
-function rowHtml(p, tokens, swipe = false, icon = false) {
+// UP, GEH et GU d'une centrale, sur une ligne
+const groupLabel = (p) => [p.up, p.geh, p.gu].filter(Boolean).join(" · ");
+
+// Chaque ligne se balaie vers la gauche (voir « Balayage des lignes ») ; `recent` : ligne des
+// « Récents », qui a aussi « Supprimer » (la retirer des récents).
+function rowHtml(p, tokens, recent = false, icon = false) {
   let meta = "";
   if (state.pos) {
     const km = distanceKm(state.pos, p);
@@ -231,19 +237,14 @@ function rowHtml(p, tokens, swipe = false, icon = false) {
   if (p.note) meta += `<span class="tag note">${escapeHtml(p.note)}</span>`;
   if (p.pending) meta += `<span class="tag pending">En attente d'envoi</span>`;
   const fav = state.favs.has(p.id);
-  // Récents : boutons révélés en balayant la ligne vers la gauche (voir « Balayage des récents »)
-  const actions = swipe ? `<div class="swipe-actions">
-    <button type="button" class="swipe-fav${fav ? " on" : ""}" data-swipe="fav" tabindex="-1">${ICON_STAR_BIG}<span>${fav ? "Retirer" : "Favori"}</span></button>
-    <button type="button" class="swipe-del" data-swipe="del" tabindex="-1">${ICON_TRASH}<span>Supprimer</span></button>
-  </div>` : "";
-  return `<li${swipe ? ` class="swipe" data-id="${p.id}"` : ""}>${actions}<button class="row${icon ? " with-icon" : ""}" data-id="${p.id}">
+  return `<li class="swipe${recent ? " recent" : ""}" data-id="${escapeHtml(p.id)}"><button class="row${icon ? " with-icon" : ""}" data-id="${escapeHtml(p.id)}">
     ${icon ? iconOf(p) : ""}<span class="row-main"><span class="row-name">${highlight(p, tokens)}</span><span class="row-meta">${meta}</span></span>
     ${fav ? ICON_STAR : ""}${ICON_CHEV}
   </button></li>`;
 }
 
-function group(label, items, tokens, small = false, swipe = false, icon = false) {
-  return `<li><h2 class="group-label${small ? " small" : ""}">${label}</h2><ul class="group">${items.map((p) => rowHtml(p, tokens, swipe, icon)).join("")}</ul></li>`;
+function group(label, items, tokens, small = false, recent = false, icon = false) {
+  return `<li><h2 class="group-label${small ? " small" : ""}">${label}</h2><ul class="group">${items.map((p) => rowHtml(p, tokens, recent, icon)).join("")}</ul></li>`;
 }
 
 function render() {
@@ -340,11 +341,15 @@ function locate() {
 
 const sheet = $("#sheet");
 
-function openSheet(p) {
+// `map` : ouverte depuis la carte « Autour de moi » → petite carte centrée sur la centrale
+function openSheet(p, { map = false } = {}) {
   // iPhone, clavier ouvert : un toucher sur le fond de l'éditeur peut atteindre la liste cachée dessous
   if ($("#editor").open) return;
   state.current = p;
   $("#sheetName").textContent = p.n;
+  const g = groupLabel(p);
+  $("#sheetGroup").innerHTML = g ? `${iconOf(p)}<span>${escapeHtml(g)}</span>` : "";
+  $("#sheetGroup").hidden = !g;
   let meta = `${formatCoord(p.lat)}, ${formatCoord(p.lon)}`;
   if (state.pos) meta = `${formatKm(distanceKm(state.pos, p))} à vol d'oiseau, direction ${compass(bearing(state.pos, p))}`;
   if (p.r) meta += ` — ${p.r}`;
@@ -364,8 +369,37 @@ function openSheet(p) {
   // Ordinateur : Waze / Google Maps dans un nouvel onglet, l'appli reste ouverte dans le sien
   if (isDesktop) for (const el of ["#goWaze", "#goGmaps", "#goPlans"]) Object.assign($(el), { target: "_blank", rel: "noopener" });
   $("#offlineHint").hidden = navigator.onLine;
+  $("#sheetMap").hidden = !(map && navigator.onLine);   // sans réseau, pas de fond de carte
   sheet.showModal();
+  if (!$("#sheetMap").hidden) SheetMap.show(p);
 }
+
+// Petite carte de la fiche : l'emplacement de la centrale, avec le fond choisi sur la carte
+// « Autour de moi ». Zoom 15 : la centrale et ses abords (environ 1 km de large).
+const SheetMap = (() => {
+  let L = null, map = null, layers = null, marker = null, layerKey = "";
+
+  async function show(p) {
+    try { L = await loadLeaflet(); } catch { $("#sheetMap").hidden = true; return; }
+    if (!sheet.open || state.current !== p) return;
+    if (!map) {
+      map = L.map("smap", { zoomControl: false, attributionControl: true, scrollWheelZoom: false });
+      layers = tileLayers(L);
+    }
+    const chosen = store.get("mapLayer", "plan"), key = chosen in layers ? chosen : "plan";
+    if (key !== layerKey) {
+      Object.entries(layers).forEach(([k, layer]) => (k === key ? layer.addTo(map) : layer.remove()));
+      layerKey = key;
+    }
+    map.invalidateSize();
+    map.setView([p.lat, p.lon], 15, { animate: false });
+    const icon = L.divIcon({ className: "mk", html: iconOf(p), iconSize: [30, 30], iconAnchor: [15, 15] });
+    if (marker) marker.setLatLng([p.lat, p.lon]).setIcon(icon);
+    else marker = L.marker([p.lat, p.lon], { icon, interactive: false }).addTo(map);
+  }
+
+  return { show };
+})();
 
 function closeSheet() { if (sheet.open) sheet.close(); }
 
@@ -459,7 +493,7 @@ const NearMap = (() => {
         icon: L.divIcon({ className: "mk", html: `${iconOf(p)}<span class="mk-label">${escapeHtml(p.n)}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] }),
         title: p.n, riseOnHover: true,
       });
-      m.on("click", () => openSheet(byId.get(p.id) || p));
+      m.on("click", () => openSheet(byId.get(p.id) || p, { map: true }));
       markers.addLayer(m);
     }
   }
@@ -605,7 +639,7 @@ function prep(p, pending = false) {
 const rawOf = ({ id, pending, fold, canon, ...raw }) => raw;
 
 function rebuild() {
-  const pendingIds = new Set(state.pending.filter((o) => o.op === "add").map((o) => Sync.idOf(o.item)));
+  const pendingIds = new Set(state.pending.filter((o) => o.op === "add" || o.op === "edit").map((o) => Sync.idOf(o.item)));
   plants = Sync.applyOps(basePlants, state.pending)
     .map((p) => prep(p, pendingIds.has(Sync.idOf(p))))
     .sort((a, b) => a.n.localeCompare(b.n, "fr", { sensitivity: "base", numeric: true }));
@@ -630,14 +664,43 @@ function changed() {
   scheduleSync();
 }
 
-function addPlant(name, lat, lon, up = "", geh = "") {
-  const item = { n: name, lat: +lat.toFixed(6), lon: +lon.toFixed(6) };
-  if (up) item.up = up;
-  if (geh) item.geh = geh;
-  const r = regionOf(item.lat, item.lon);
-  if (r) item.r = r;
+// Centrale telle qu'elle sera enregistrée (champs vides omis). `orig` : la centrale modifiée,
+// dont on garde les champs que l'écran ne connaît pas et la position exacte si elle n'a pas bougé.
+function plantItem({ n, lat, lon, up, geh, gu, note }, orig = null) {
+  const same = orig && lat === orig.lat && lon === orig.lon;
+  const item = { ...(orig ? rawOf(orig) : {}), n, lat: same ? lat : +lat.toFixed(6), lon: same ? lon : +lon.toFixed(6), up, geh, gu, note };
+  item.r = same ? orig.r : regionOf(item.lat, item.lon);
+  for (const k of Object.keys(item)) if (item[k] == null || item[k] === "") delete item[k];
+  return item;
+}
+
+function addPlant(item) {
   state.pending.push({ op: "add", item });
   changed();
+}
+
+// Le nom ou les coordonnées changent l'identifiant : favoris et récents suivent.
+function moveId(from, to) {
+  if (from === to) return;
+  if (state.favs.delete(from)) state.favs.add(to);
+  state.recents = state.recents.map((id) => (id === from ? to : id));
+}
+
+function editPlant(p, item) {
+  const before = rawOf(p), from = p.id, to = Sync.idOf(item);
+  const op = { op: "edit", id: from, item };
+  state.pending.push(op);
+  moveId(from, to);
+  changed();
+  if (state.favs.has(to) && from !== to) FavFile.update();
+  toast(`« ${item.n} » modifiée`, () => {
+    const idx = state.pending.indexOf(op);
+    if (idx >= 0) state.pending.splice(idx, 1);                  // pas encore envoyée
+    else state.pending.push({ op: "edit", id: to, item: before }); // déjà envoyée : on revient en arrière
+    moveId(to, from);
+    changed();
+    toast("Modification annulée");
+  });
 }
 
 function removePlant(p) {
@@ -766,17 +829,31 @@ async function activateToken() {
   News.forEditors();
 }
 
-/* ===================== Balayage des récents ===================== */
+/* ===================== Balayage des lignes ===================== */
 
-// Comme dans les listes de l'iPhone : balayer une ligne des récents vers la gauche
-// révèle « Favori » et « Supprimer » ; balayer à fond la retire des récents
-// (sans toucher aux favoris). Pointer events + `touch-action: pan-y` : le défilement
-// vertical reste au navigateur, le geste horizontal nous revient.
-const SWIPE_OPEN = 160;       // largeur des deux boutons
-const SWIPE_FULL = 0.6;       // au-delà de cette part de la largeur : suppression
+// Comme dans les listes de l'iPhone : balayer une ligne vers la gauche révèle « Favori »,
+// « Modifier » (avec le code d'édition) et, pour les récents, « Supprimer » ; balayer à fond
+// une ligne des récents la retire des récents (sans toucher aux favoris). Les boutons sont
+// créés au début du geste (pas dans chacune des ~600 lignes). Pointer events +
+// `touch-action: pan-y` : le défilement vertical reste au navigateur, le geste horizontal nous revient.
+const SWIPE_BTN = 80;         // largeur d'un bouton
+const SWIPE_FULL = 0.6;       // au-delà de cette part de la largeur : suppression (récents)
 let swipeOpen = null;         // ligne restée ouverte
 let swipeDrag = null;         // geste en cours
 let swipeEatClick = false;    // le clic qui suit un geste ne doit pas ouvrir la fiche
+
+function swipeActions(li) {
+  const fav = state.favs.has(li.dataset.id);
+  const btn = (cls, key, icon, label) => `<button type="button" class="${cls}" data-swipe="${key}" tabindex="-1">${icon}<span>${label}</span></button>`;
+  li.querySelector(".swipe-actions")?.remove();
+  li.insertAdjacentHTML("afterbegin", `<div class="swipe-actions">${
+    btn(`swipe-fav${fav ? " on" : ""}`, "fav", ICON_STAR_BIG, fav ? "Retirer" : "Favori")}${
+    state.token ? btn("swipe-edit", "edit", ICON_EDIT, "Modifier") : ""}${
+    li.classList.contains("recent") ? btn("swipe-del", "del", ICON_TRASH, "Supprimer") : ""}</div>`);
+}
+const swipeWidth = (li) => li.querySelectorAll(".swipe-actions button").length * SWIPE_BTN;
+// Balayage à fond (récents seulement) : au-delà des boutons, et d'au moins 60 % de la ligne
+const swipeFull = (li) => li.classList.contains("recent") ? Math.max(li.offsetWidth * SWIPE_FULL, swipeWidth(li) + 60) : Infinity;
 
 function setSwipe(li, x) {
   li.style.setProperty("--x", `${x}px`);
@@ -827,7 +904,7 @@ function bindSwipe() {
       if (list.contains(e.target)) swipeEatClick = true;
     }
     if (!li || e.button > 0 || e.target.closest(".swipe-actions") || li.classList.contains("leaving")) return;
-    const base = li === swipeOpen ? -SWIPE_OPEN : 0;
+    const base = li === swipeOpen ? -swipeWidth(li) : 0;
     swipeDrag = { li, id: e.pointerId, x0: e.clientX, y0: e.clientY, base, x: base, moved: false, lastX: e.clientX, lastT: e.timeStamp, vx: 0 };
   });
 
@@ -839,15 +916,17 @@ function bindSwipe() {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       if (Math.abs(dy) > Math.abs(dx)) { swipeDrag = null; return; }   // défilement vertical
       d.moved = true;
+      if (d.li !== swipeOpen) swipeActions(d.li);
       d.li.classList.add("dragging", "active");
       try { d.li.setPointerCapture(e.pointerId); } catch { /* sans importance */ }
     }
-    const w = d.li.offsetWidth;
-    d.x = Math.max(-w, Math.min(0, d.base + dx));
+    // Sans suppression, la ligne ne va guère plus loin que ses boutons
+    const max = d.li.classList.contains("recent") ? d.li.offsetWidth : swipeWidth(d.li) + 40;
+    d.x = Math.max(-max, Math.min(0, d.base + dx));
     const dt = e.timeStamp - d.lastT;
     if (dt > 0) d.vx = (e.clientX - d.lastX) / dt;
     d.lastX = e.clientX; d.lastT = e.timeStamp;
-    d.li.classList.toggle("armed", -d.x > w * SWIPE_FULL);
+    d.li.classList.toggle("armed", -d.x > swipeFull(d.li));
     setSwipe(d.li, d.x);
   });
 
@@ -865,10 +944,10 @@ function bindSwipe() {
     if (e.type === "pointerup" && d.li.classList.contains("armed")) return swipeDelete(d.li);
     d.li.classList.remove("armed");
     const flick = e.type === "pointerup" && d.vx < -0.5;
-    if (-d.x > SWIPE_OPEN / 2 || (flick && d.x < -20)) {
+    if (-d.x > swipeWidth(d.li) / 2 || (flick && d.x < -20)) {
       if (swipeOpen && swipeOpen !== d.li) closeSwipe();
       swipeOpen = d.li;
-      setSwipe(d.li, -SWIPE_OPEN);
+      setSwipe(d.li, -swipeWidth(d.li));
     } else {
       closeSwipe(d.li);
     }
@@ -889,6 +968,10 @@ function bindSwipe() {
     e.stopPropagation();
     const li = btn.closest(".swipe");
     if (btn.dataset.swipe === "del") return swipeDelete(li);
+    if (btn.dataset.swipe === "edit") {
+      closeSwipe(li);
+      return Editor.open(byId.get(li.dataset.id));
+    }
     toggleFav(li.dataset.id);
     closeSwipe(li);
     setTimeout(render, 300);   // laisse la ligne se refermer avant de redessiner
@@ -953,6 +1036,7 @@ function bind() {
     catch { toast(`${p.lat}, ${p.lon}`); }
   });
   $("#close").addEventListener("click", closeSheet);
+  $("#edit").addEventListener("click", () => { const p = state.current; closeSheet(); Editor.open(p); });
 
   const confirmDlg = $("#confirm");
   $("#remove").addEventListener("click", () => {
@@ -1139,8 +1223,9 @@ const Editor = (() => {
   const name = $("#fName"), search = $("#fSearch"), coords = $("#fCoords");
   const results = $("#fResults"), save = $("#editorSave"), coordsMsg = $("#fCoordsMsg");
   const mapMsg = $("#mapMsg"), mapHint = $("#mapHint");
-  const groupSel = $("#fGroup");
+  const groupSel = $("#fGroup"), gu = $("#fGu"), note = $("#fNote");
   let L = null, map = null, marker = null, layers = {}, point = null, groupTouched = false;
+  let editing = null;   // centrale modifiée (null : ajout)
 
   const PIN = '<svg viewBox="0 0 34 44" aria-hidden="true"><path fill="currentColor" d="M17 1C8.2 1 1 7.9 1 16.4 1 27.6 13.4 37.6 15.8 39.4a2 2 0 0 0 2.4 0C20.6 37.6 33 27.6 33 16.4 33 7.9 25.8 1 17 1z"/><circle cx="17" cy="16" r="6" fill="#fff"/></svg>';
 
@@ -1190,8 +1275,13 @@ const Editor = (() => {
     if (!fromInput) coords.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
     coords.style.borderColor = "";
     let near = null, nearKm = Infinity;
-    for (const p of plants) { const d = distanceKm(point, p); if (d < nearKm) { nearKm = d; near = p; } }
-    if (near && nearKm < 1) {
+    for (const p of plants) {
+      if (p.id === editing?.id) continue;
+      const d = distanceKm(point, p);
+      if (d < nearKm) { nearKm = d; near = p; }
+    }
+    const unmoved = editing && lat === editing.lat && lon === editing.lon;   // modification : position d'origine
+    if (near && nearKm < 1 && !unmoved) {
       coordsMsg.className = "warn";
       coordsMsg.textContent = `Attention : « ${near.n} » est déjà dans la liste, à ${formatKm(nearKm)} de ce point.`;
     } else {
@@ -1221,6 +1311,9 @@ const Editor = (() => {
     const opt = (up, geh) => `<option value="${escapeHtml(`${up}|${geh}`)}">${escapeHtml(geh || up)}</option>`;
     groupSel.innerHTML = '<option value="">Non classée</option>' + [...ups].map(([up, gehs]) =>
       `<optgroup label="${escapeHtml(up)}">${(gehs.size ? [...gehs] : [""]).map((geh) => opt(up, geh)).join("")}</optgroup>`).join("");
+    // GU déjà saisis, proposés pendant la frappe
+    $("#guList").innerHTML = [...new Set(plants.map((p) => p.gu).filter(Boolean))].sort()
+      .map((g) => `<option value="${escapeHtml(g)}">`).join("");
   }
 
   // Code Google saisi dans « Coordonnées GPS » : le champ garde le code, le message
@@ -1280,10 +1373,13 @@ const Editor = (() => {
     }
   }
 
-  function open() {
+  // Sans argument : nouvelle centrale. Avec une centrale : modification (mêmes champs, remplis).
+  function open(p = null) {
+    if (p && !byId.has(p.id)) return;
+    editing = p;
     $("#editorForm").reset();
     fillGroups();
-    groupTouched = false;
+    groupTouched = !!p;   // en modification, déplacer le repère ne change pas le groupe
     point = null;
     if (marker) { marker.remove(); marker = null; }
     showResults("");
@@ -1291,13 +1387,22 @@ const Editor = (() => {
     coordsMsg.className = "";
     coordsMsg.textContent = "Saisissez-les directement si vous les connaissez (ou un code Google).";
     $("#fSearchGo").disabled = false;
+    $("#editorTitle").textContent = p ? "Modifier la centrale" : "Nouvelle centrale";
+    save.textContent = p ? "Enregistrer" : "Ajouter";
+    if (p) {
+      name.value = p.n;
+      groupSel.value = p.up ? `${p.up}|${p.geh || ""}` : "";
+      gu.value = p.gu || "";
+      note.value = p.note || "";
+      setPoint(p.lat, p.lon, { pan: false });
+    }
     validate();
     // L'éditeur remplace la liste (voir .editor dans styles.css) : on retient où elle en était
     listScroll = window.scrollY;
     dlg.show();
     window.scrollTo(0, 0);
     initMap();
-    setTimeout(() => name.focus(), 300);
+    if (!p) setTimeout(() => name.focus(), 300);   // en modification, pas de clavier par-dessus la carte
   }
 
   function close() { if (dlg.open) dlg.close(); }
@@ -1360,9 +1465,11 @@ const Editor = (() => {
     const n = name.value.trim();
     if (!n || !point) return;
     const [up, geh = ""] = groupSel.value ? groupSel.value.split("|") : [];
-    addPlant(n, point.lat, point.lon, up, geh);
+    const item = plantItem({ n, lat: point.lat, lon: point.lon, up, geh, gu: gu.value.trim(), note: note.value.trim() }, editing);
     close();
-    toast(`« ${n} » ajoutée`);
+    if (!editing) { addPlant(item); toast(`« ${n} » ajoutée`); return; }
+    if (Sync.serialize([item]) === Sync.serialize([rawOf(editing)])) { toast("Aucune modification"); return; }
+    editPlant(editing, item);
   });
   window.addEventListener("online", () => { if (dlg.open && !map) initMap(); });
 
@@ -1372,7 +1479,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.12.2";
+const APP_VERSION = "1.13.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1391,13 +1498,56 @@ const cmpVersion = (a, b) => {
 
 /* ===================== Nouveautés ===================== */
 
-// Les fonctions nouvelles de chaque version et comment s'en servir (pas les corrections :
-// elles restent dans CHANGELOG.md). Présentées une fois, juste après la mise à jour, puis
-// retrouvables dans Réglages → À propos. Ajouter une entrée (la plus récente en tête)
-// quand une version apporte quelque chose que l'utilisateur doit savoir utiliser.
-// `art` : illustration dessinée par NEWS_ART. `editors: true` : présentée seulement aux téléphones
-// qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
+// Ce qui change à chaque version (la plus récente en tête), listé dans Réglages → À propos.
+// `items` : fonctions nouvelles, avec une fiche qui explique comment s'en servir (titre, texte,
+// étapes, illustration `art` dessinée par NEWS_ART) ; présentées une fois juste après la mise à
+// jour, et dans le didacticiel du premier lancement. `editors: true` : présentée seulement aux
+// téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
+// `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.13.0", date: "16 octobre 2026", items: [
+    { art: "swipeall", title: "Balayer n'importe quelle centrale",
+      text: "Plus seulement les récents : toutes les lignes se balaient, dans A–Z, « Autour de moi » et « Favoris ».",
+      steps: [
+        "Balayez une ligne vers la gauche : bouton « Favori ».",
+        "Dans « Récents », « Supprimer » la retire des récents, comme avant.",
+      ] },
+    { art: "mapsheet", title: "La fiche de la centrale sur la carte",
+      text: "Touchez une centrale sur la carte : sa fiche montre son emplacement de près, avec son UP et son GEH.",
+      steps: [
+        "Touchez « Autour de moi », puis « Carte ».",
+        "Touchez une icône : la fiche s'ouvre avec la petite carte, puis Waze, Google Maps ou Plans.",
+        "L'UP et le GEH s'affichent sous le nom, dans toutes les fiches.",
+      ],
+      note: "Sans réseau, la petite carte n'est pas affichée." },
+    { art: "edit", editors: true, title: "Modifier une centrale",
+      text: "Corrigez le nom, la position, l'UP, le GEH, le GU ou les informations d'une centrale, pour tout le monde.",
+      steps: [
+        "Balayez la ligne vers la gauche et touchez « Modifier » (ou « Modifier » en bas de la fiche).",
+        "La position se change sur la carte, ou en collant des coordonnées GPS ou un code Google.",
+        "Les informations s'affichent en orange dans la liste (ex. « Tête de GU »).",
+        "Touchez « Enregistrer ». Une erreur ? « Annuler » dans le message en bas.",
+      ] },
+  ], fixes: [
+    "Nouveautés : les corrections de chaque version sont aussi listées, en quelques mots.",
+    "Ajout d'une centrale : champs GU et informations.",
+  ] },
+  { v: "1.12.2", date: "15 octobre 2026", fixes: [
+    "Android : le fichier de favoris est mis à jour sur place, comme sur ordinateur.",
+  ] },
+  { v: "1.12.1", date: "15 octobre 2026", fixes: [
+    "Ordinateur : Waze et Google Maps s'ouvrent dans un nouvel onglet.",
+    "Ordinateur : le fichier de favoris est mis à jour sur place, sans nouveau téléchargement.",
+  ] },
+  { v: "1.12.0", date: "15 octobre 2026", fixes: [
+    "Didacticiel au premier lancement.",
+  ] },
+  { v: "1.11.2", date: "15 octobre 2026", fixes: [
+    "Safari sur iPhone : croix « Déjà installée » sur le bandeau d'installation.",
+  ] },
+  { v: "1.11.1", date: "14 octobre 2026", fixes: [
+    "La fiche des codes Google n'est présentée qu'avec le code d'édition.",
+  ] },
   { v: "1.11.0", date: "14 octobre 2026", items: [
     { art: "pluscode", editors: true, title: "Les codes Google compris à l'ajout",
       text: "Pour ajouter une centrale, collez le code Google d'un lieu (par exemple « XQ5R+9M Arrens-Marsous ») : le point s'affiche sur la carte.",
@@ -1407,6 +1557,27 @@ const NEWS = [
         "Les coordonnées GPS sont aussi comprises : 45.10453, 1.95359, degrés-minutes-secondes ou format des GPS (N 45° 6.272').",
       ],
       note: "Sans la commune, le code est complété d'après votre position." },
+  ] },
+  { v: "1.10.7", date: "14 octobre 2026", fixes: [
+    "Réglages : boutons « À propos » espacés, fenêtres qui s'ouvrent d'un seul bloc.",
+  ] },
+  { v: "1.10.6", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale : l'écran remplace la liste le temps de la saisie.",
+  ] },
+  { v: "1.10.5", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale : la liste ne défile plus dessous.",
+  ] },
+  { v: "1.10.4", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale : toucher le fond ne ferme plus le clavier.",
+  ] },
+  { v: "1.10.3", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale sur iPhone : toucher le fond n'ouvre plus une centrale de la liste.",
+  ] },
+  { v: "1.10.2", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale sur iPhone : l'écran reste au-dessus du clavier.",
+  ] },
+  { v: "1.10.1", date: "14 octobre 2026", fixes: [
+    "Ajout d'une centrale sur iPhone : la liste n'apparaît plus derrière le clavier.",
   ] },
   { v: "1.10.0", date: "13 octobre 2026", items: [
     { art: "favfile", title: "Vos favoris gardés dans un fichier",
@@ -1419,6 +1590,13 @@ const NEWS = [
         "Après avoir ajouté ou retiré un favori, touchez « Enregistrer » pour le mettre à jour.",
         "Tout se retrouve dans Réglages, rubrique « Favoris ».",
       ] },
+  ] },
+  { v: "1.9.0", date: "13 octobre 2026", fixes: [
+    "Présentation des nouveautés après chaque mise à jour.",
+    "Les fenêtres plus hautes que l'écran défilent.",
+  ] },
+  { v: "1.8.1", date: "13 octobre 2026", fixes: [
+    "Couleurs des icônes identiques à l'ancienne carte « Centrales EDF ».",
   ] },
   { v: "1.8.0", date: "13 octobre 2026", items: [
     { art: "map", title: "La carte autour de vous",
@@ -1436,6 +1614,14 @@ const NEWS = [
         "Visible dans « Autour de moi », en liste et sur la carte.",
         "Le détail des couleurs est dans « Légende », sur la carte.",
       ] },
+  ], fixes: [
+    "Ajout d'une centrale : le groupe de la centrale la plus proche est proposé.",
+  ] },
+  { v: "1.7.2", date: "12 octobre 2026", fixes: [
+    "Numéro de la nouvelle version dans le bandeau de mise à jour.",
+  ] },
+  { v: "1.7.1", date: "12 octobre 2026", fixes: [
+    "Code d'édition, favoris et récents se conservent mieux sur le téléphone.",
   ] },
   { v: "1.7.0", date: "12 octobre 2026", items: [
     { art: "swipe", title: "Balayer une centrale récente",
@@ -1449,6 +1635,14 @@ const NEWS = [
   { v: "1.6.0", date: "10 octobre 2026", items: [
     { art: "note", title: "Remarque sur une centrale",
       text: "Quand une position reste à vérifier, une remarque comme « Emplacement à confirmer » s'affiche dans la liste et sur la fiche de navigation." },
+  ], fixes: [
+    "Réglages : lien vers « Contrôle des positions GPS » (avec le code d'édition).",
+  ] },
+  { v: "1.5.1", date: "5 octobre 2026", fixes: [
+    "L'appli installée s'appelle « Navigation Centrales ».",
+  ] },
+  { v: "1.5.0", date: "5 octobre 2026", fixes: [
+    "Bandeau « Installer » : en un geste sur Android, étapes à suivre sur iPhone.",
   ] },
   { v: "1.4.0", date: "5 octobre 2026", items: [
     { art: "update", title: "Mise à jour en un geste",
@@ -1457,6 +1651,16 @@ const NEWS = [
         "Touchez « Mettre à jour » : plus besoin de réinstaller l'appli.",
         "Pour vérifier vous-même : Réglages → « Rechercher une mise à jour ».",
       ] },
+  ] },
+  { v: "1.3.0", date: "4 octobre 2026", fixes: [
+    "Ajout de 9 centrales thermiques à flamme d'EDF.",
+  ] },
+  { v: "1.2.0", date: "4 octobre 2026", fixes: [
+    "Liste partagée dans un dépôt à part : un nouveau code d'édition est nécessaire.",
+    "Numéro de version dans les Réglages.",
+  ] },
+  { v: "1.1.0", date: "4 octobre 2026", fixes: [
+    "Compatible Android, nouvelle icône, corrections pour iPhone.",
   ] },
   { v: "1.0.0", date: "4 octobre 2026", items: [
     { art: "apps", title: "Lancer la navigation, même sans réseau",
@@ -1473,6 +1677,29 @@ const ICON_FAVFILE = '<svg class="art-doc" viewBox="0 0 30 36" aria-hidden="true
 
 // Illustrations : de petites maquettes de l'interface, animées si le téléphone le permet.
 const NEWS_ART = {
+  swipeall: () => `<p class="art-label">A</p><div class="art-card">
+      <div class="art-swipe one"><div class="art-actions">
+        <span class="swipe-fav">${ICON_STAR_BIG}Favori</span>
+      </div><div class="art-row"><span><b>AIGLE</b><small>45.36, 2.34</small></span></div>
+      <span class="art-finger"></span></div>
+      <div class="art-row"><span><b>ARGENTAT</b><small>45.10, 1.95</small></span></div>
+    </div>`,
+  edit: () => `<div class="art-card">
+      <div class="art-swipe"><div class="art-actions">
+        <span class="swipe-fav">${ICON_STAR_BIG}Favori</span><span class="swipe-edit">${ICON_EDIT}Modifier</span>
+      </div><div class="art-row"><span><b>GU DE CASTILLON</b><small>12 km SE <em>Tête de GU</em></small></span></div>
+      <span class="art-finger"></span></div>
+    </div>
+    <div class="art-fields"><span>Nom, position, UP et GEH, GU</span><span class="art-btn">Enregistrer</span></div>`,
+  mapsheet: () => {
+    const p = { up: "UP Alpes", geh: "GEH Ecrins Vercors" };
+    return `<div class="art-sheet"><b>GRAND'MAISON</b>
+      <small class="art-group">${iconOf(p)}${groupLabel(p)}</small>
+      <div class="art-minimap">
+        <svg class="art-terrain" viewBox="0 0 300 80" preserveAspectRatio="none"><path class="river" d="M-5 60C60 40 100 70 150 44S240 10 305 22"/><path class="road" d="M60 -5 90 85"/></svg>
+        <span class="art-pin" style="left:50%;top:50%">${iconOf(p)}</span>
+      </div></div>`;
+  },
   swipe: () => `<p class="art-label">Récents</p><div class="art-card">
       <div class="art-swipe"><div class="art-actions">
         <span class="swipe-fav">${ICON_STAR_BIG}Favori</span><span class="swipe-del">${ICON_TRASH}Supprimer</span>
@@ -1552,7 +1779,7 @@ const News = (() => {
 
   // Nouveautés des versions plus récentes que `v`, de la plus ancienne à la plus récente.
   const since = (v) => NEWS.filter((e) => cmpVersion(e.v, v) > 0).reverse()
-    .flatMap((e) => e.items.map((it) => ({ ...it, v: e.v })));
+    .flatMap((e) => (e.items || []).map((it) => ({ ...it, v: e.v })));
 
   // Au lancement : présente une seule fois ce qui est arrivé depuis la dernière version vue.
   // Première installation : didacticiel (toutes les fiches, de la plus ancienne à la plus
@@ -1578,11 +1805,13 @@ const News = (() => {
     if (list.length) open(list, 0, "update");
   }
 
+  // Toutes les versions : les fonctions nouvelles (flèche → leur fiche), puis les corrections.
   function openAll() {
     $("#newsAllBody").innerHTML = NEWS.map((e, ei) => `<section class="nw">
       <h3>Version ${e.v} <small>${e.date}</small></h3>
-      ${e.items.map((it, i) => `<button type="button" class="nw-item" data-e="${ei}" data-i="${i}">
+      ${(e.items || []).map((it, i) => `<button type="button" class="nw-item" data-e="${ei}" data-i="${i}">
         <span><b>${escapeHtml(it.title)}</b><small>${escapeHtml(nbsp(it.text))}</small></span>${ICON_CHEV}</button>`).join("")}
+      ${(e.fixes || []).map((f) => `<p class="nw-fix">${escapeHtml(nbsp(f))}</p>`).join("")}
     </section>`).join("");
     all.showModal();
   }

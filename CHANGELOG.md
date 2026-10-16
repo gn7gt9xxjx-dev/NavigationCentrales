@@ -2,6 +2,13 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.13.0
+- **Balayage de toutes les lignes** (A–Z, « Autour de moi », « Favoris », résultats de recherche), plus seulement des récents : bouton « Favori ». « Supprimer » et le balayage à fond restent réservés aux récents (les retirer des récents). Les boutons sont créés au début du geste.
+- **Modifier une centrale** (avec le code d'édition) : bouton « Modifier » en balayant la ligne, ou en bas de la fiche. Même écran que l'ajout, rempli : nom, position (carte, coordonnées GPS ou code Google), UP et GEH, GU, informations (champ `note`, affiché en orange). Envoyé comme une opération `edit` (commit « Modification de … ») ; favoris et récents suivent la centrale si son nom ou sa position change. « Annuler » dans le message pour revenir en arrière.
+- Écran d'ajout : champs « GU (facultatif) » et « Informations ». Nouveau champ facultatif `gu` dans la liste partagée (entre `geh` et `r`).
+- Fiche d'une centrale : UP · GEH (· GU) sous le nom, avec l'icône du groupe. Ouverte depuis la carte « Autour de moi » : petite carte de l'emplacement (zoom 15, fond Plan ou Satellite comme la carte), masquée sans réseau.
+- Réglages → « Nouveautés de chaque version » : toutes les versions, avec les corrections en quelques mots (sans flèche) ; seules les fonctions nouvelles ont une flèche qui ouvre leur fiche.
+
 ## 1.12.2
 - Android (Chrome 132 ou plus récent) : le fichier de favoris est relié comme sur ordinateur. On choisit une fois où le créer (ou on charge l'existant), puis il est réécrit sur place à chaque favori ajouté ou retiré, sans nouvelle copie dans Téléchargements. Si le navigateur ne le permet pas (ancien Chrome, Firefox…), ou refuse d'écrire dans le fichier choisi, retour au téléchargement comme avant. iPhone : inchangé.
 
