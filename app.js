@@ -136,9 +136,12 @@ function inkOn(hex) {
   return 0.299 * r + 0.587 * g + 0.114 * b > 0.62 ? "#1B1B1B" : "#FFFFFF";
 }
 
-const SPOKES = Array.from({ length: 8 }, (_, i) => {
-  const a = (i * Math.PI) / 4, c = Math.cos(a), s = Math.sin(a);
-  return `M${(16 + 4.3 * c).toFixed(1)} ${(11.5 + 4.3 * s).toFixed(1)}L${(16 + 6.3 * c).toFixed(1)} ${(11.5 + 6.3 * s).toFixed(1)}`;
+// Roue de turbine vue de dessus : 7 pales incurvées autour du moyeu (centre 16, 12), dans sa ceinture.
+const BLADE = [[-1.1, -2], [-1.6, -3.85], [-0.2, -6.65], [3.15, -7], [0.7, -5.25], [0.25, -2.8], [1.2, -1.9]];
+const RUNNER = Array.from({ length: 7 }, (_, i) => {
+  const a = (i * 2 * Math.PI) / 7, c = Math.cos(a), s = Math.sin(a);
+  const [p0, p1, p2, p3, p4, p5, p6] = BLADE.map(([x, y]) => `${(16 + x * c - y * s).toFixed(2)} ${(12 + x * s + y * c).toFixed(2)}`);
+  return `M${p0}C${p1} ${p2} ${p3}C${p4} ${p5} ${p6}Z`;
 }).join("");
 const WAVE = (y) => `M8.5 ${y}q1.9-1.8 3.75 0t3.75 0 3.75 0 3.75 0`;
 const TOWER = "M5.5 29.5Q13.5 20 9.8 10.5h12.4Q18.5 20 26.5 29.5z";
@@ -162,8 +165,9 @@ function plantIcon(type, color) {
   } else {
     body = `<circle cx="16" cy="16" r="14.4" fill="${color}" stroke="rgba(0,0,0,.35)" stroke-width="3"/>` +
            `<circle cx="16" cy="16" r="14.4" fill="${color}" stroke="#fff" stroke-width="1.4"/>` +
-           `<g fill="none" stroke="${ink}" stroke-width="1.8" stroke-linecap="round"><circle cx="16" cy="11.5" r="2.6"/>` +
-           `<path d="${SPOKES}${WAVE(21)}${WAVE(25)}"/></g>`;
+           `<g fill="${ink}" stroke="none"><path d="${RUNNER}"/><circle cx="16" cy="12" r="2.3"/><circle cx="16" cy="12" r=".9" fill="${color}"/></g>` +
+           `<g fill="none" stroke="${ink}" stroke-linecap="round"><circle cx="16" cy="12" r="7.6" stroke-width="1.3"/>` +
+           `<path d="${WAVE(23)}${WAVE(26.4)}" stroke-width="1.6"/></g>`;
   }
   return `<svg class="pi" viewBox="0 0 32 32" aria-hidden="true">${body}</svg>`;
 }
@@ -1474,7 +1478,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.14.0";
+const APP_VERSION = "1.14.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1500,6 +1504,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.14.1", date: "16 octobre 2026", fixes: [
+    "Barrages : l'icône montre une roue de turbine au-dessus de l'eau.",
+  ] },
   { v: "1.14.0", date: "16 octobre 2026", items: [
     { art: "mapsheet", title: "La petite carte dans toutes les fiches",
       text: "La fiche d'une centrale montre son emplacement de près, quelle que soit la liste d'où on l'ouvre.",
