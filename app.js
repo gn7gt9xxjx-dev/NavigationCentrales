@@ -1491,7 +1491,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.15.0";
+const APP_VERSION = "1.15.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1517,6 +1517,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.15.1", date: "17 octobre 2026", fixes: [
+    "Réglages et fiches : plus de contour autour de « Fermer » à l'ouverture.",
+  ] },
   { v: "1.15.0", date: "17 octobre 2026", items: [
     { art: "sheetlayer", title: "Plan ou satellite pour la petite carte",
       text: "Choisissez le fond de la petite carte affichée dans la fiche d'une centrale, ou masquez-la.",
