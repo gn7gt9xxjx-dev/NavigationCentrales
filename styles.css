@@ -309,6 +309,13 @@ a.btn-plain { display: flex; align-items: center; justify-content: center; text-
 .btn-plain.wide { width: 100%; }
 .btn-plain:disabled { opacity: .55; }
 .settings .sheet-head { align-items: center; }
+.choice {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  padding: 3px; border-radius: 12px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+}
+.choice button { height: 44px; border-radius: 9px; font-size: 1rem; font-weight: 600; color: var(--muted); }
+.choice button[aria-pressed="true"] { background: var(--seg); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .top-row { align-items: center; }
 
 .link.danger { color: var(--danger); }
@@ -703,6 +710,23 @@ body.map-view #install { display: none; }
 /* Correction : quelques mots, sans fiche (donc sans flèche) */
 .settings p.nw-fix { margin: 0; padding: 12px 2px; border-top: 1px solid var(--line); color: var(--ink); font-size: 1rem; line-height: 1.35; }
 @media (prefers-reduced-motion: reduce) { .art-pin.tap::after { animation: none; } }
+/* Plan ↔ Satellite (fiche « sheetlayer ») ; figé sur Satellite si les animations sont réduites */
+.news-art.is-sheetlayer { gap: 10px; }
+.art-layer { grid-template-columns: repeat(3, 1fr); }
+.art-layer .plan { animation: art-seg-off 6s infinite; }
+.art-layer .sat { background: var(--seg); color: var(--ink); animation: art-seg-on 6s infinite; }
+.art-sat {
+  position: absolute; inset: 0; animation: art-sat 6s infinite;
+  background:
+    radial-gradient(circle at 22% 30%, #6F7F4A 0 18%, transparent 19%),
+    radial-gradient(circle at 78% 70%, #5C6B3C 0 22%, transparent 23%),
+    radial-gradient(ellipse at 55% 20%, #8A7A5A 0 14%, transparent 15%),
+    linear-gradient(160deg, #4E5E36, #6B6A48 55%, #3F4F33);
+}
+/* 0–45 % : Plan choisi ; 50–95 % : Satellite choisi */
+@keyframes art-seg-off { 0%, 45% { background: var(--seg); color: var(--ink); } 50%, 95% { background: transparent; color: var(--muted); } 100% { background: var(--seg); color: var(--ink); } }
+@keyframes art-seg-on { 0%, 45% { background: transparent; color: var(--muted); } 50%, 95% { background: var(--seg); color: var(--ink); } 100% { background: transparent; color: var(--muted); } }
+@keyframes art-sat { 0%, 45% { opacity: 0; } 50%, 95% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ---------- Fichier de favoris ---------- */
 .set-actions { display: grid; gap: 10px; margin: 12px 0; }

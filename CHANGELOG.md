@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.0
+- Réglages → **« Petite carte de la fiche »** : Plan, Satellite ou Masquée (clé `sheetMap` du localStorage). Tant que rien n'est choisi, la petite carte garde le fond de la carte « Autour de moi », comme avant. Fiche dans les nouveautés.
+
 ## 1.14.2
 - Icône des barrages : la roue de turbine trempe dans l'eau. Trois vagues au lieu de deux ; la première passe sur le bas de la roue, qui disparaît dessous.
 

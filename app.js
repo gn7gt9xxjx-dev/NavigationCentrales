@@ -375,13 +375,17 @@ function openSheet(p) {
   // Ordinateur : Waze / Google Maps dans un nouvel onglet, l'appli reste ouverte dans le sien
   if (isDesktop) for (const el of ["#goWaze", "#goGmaps", "#goPlans"]) Object.assign($(el), { target: "_blank", rel: "noopener" });
   $("#offlineHint").hidden = navigator.onLine;
-  $("#sheetMap").hidden = !navigator.onLine;   // petite carte centrée sur la centrale ; sans réseau, pas de fond de carte
+  // petite carte centrée sur la centrale ; sans réseau, pas de fond de carte ; masquable dans Réglages
+  $("#sheetMap").hidden = !navigator.onLine || sheetMapLayer() === "off";
   sheet.showModal();
   if (!$("#sheetMap").hidden) SheetMap.show(p);
 }
 
 // Petite carte de la fiche (toutes les fiches) : l'emplacement de la centrale, avec le fond
-// choisi sur la carte « Autour de moi ». Zoom 15 : la centrale et ses abords (environ 1 km de large).
+// choisi dans Réglages (Plan, Satellite ou Masquée). Zoom 15 : la centrale et ses abords (environ 1 km de large).
+// Pas encore choisi dans Réglages : fond de la carte « Autour de moi », comme avant la 1.15.0.
+const sheetMapLayer = () => store.get("sheetMap", null) || store.get("mapLayer", "plan");
+
 const SheetMap = (() => {
   let L = null, map = null, layers = null, marker = null, layerKey = "";
 
@@ -392,7 +396,7 @@ const SheetMap = (() => {
       map = L.map("smap", { zoomControl: false, attributionControl: true, scrollWheelZoom: false });
       layers = tileLayers(L);
     }
-    const chosen = store.get("mapLayer", "plan"), key = chosen in layers ? chosen : "plan";
+    const chosen = sheetMapLayer(), key = chosen in layers ? chosen : "plan";
     if (key !== layerKey) {
       Object.entries(layers).forEach(([k, layer]) => (k === key ? layer.addTo(map) : layer.remove()));
       layerKey = key;
@@ -802,6 +806,8 @@ function renderSettings() {
     err.textContent = "Des modifications attendent un code d'édition pour être envoyées.";
   }
   $("#setFavInfo").textContent = FavFile.info();
+  const layer = sheetMapLayer();
+  $("#setSheetMap").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.layer === layer));
 }
 
 function openSettings() {
@@ -1073,6 +1079,10 @@ function bind() {
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
   $("#setSyncNow").addEventListener("click", syncNow);
   $("#setNews").addEventListener("click", () => News.openAll());
+  $("#setSheetMap").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    store.set("sheetMap", b.dataset.layer);
+    renderSettings();
+  }));
   $("#setFavSave").addEventListener("click", () => FavFile.save());
   $("#setFavLoad").addEventListener("click", () => FavFile.pick());
   $("#favBackupGo").addEventListener("click", () => FavFile.save());
@@ -1481,7 +1491,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.14.2";
+const APP_VERSION = "1.15.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1507,6 +1517,14 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.15.0", date: "17 octobre 2026", items: [
+    { art: "sheetlayer", title: "Plan ou satellite pour la petite carte",
+      text: "Choisissez le fond de la petite carte affichée dans la fiche d'une centrale, ou masquez-la.",
+      steps: [
+        "Ouvrez Réglages, rubrique « Petite carte de la fiche ».",
+        "Touchez « Plan », « Satellite » ou « Masquée ».",
+      ] },
+  ] },
   { v: "1.14.2", date: "16 octobre 2026", fixes: [
     "Barrages : la roue de turbine trempe dans l'eau (trois vagues).",
   ] },
@@ -1721,6 +1739,17 @@ const NEWS_ART = {
       <small class="art-group">${iconOf(p)}${groupLabel(p)}</small>
       <div class="art-minimap">
         <svg class="art-terrain" viewBox="0 0 300 80" preserveAspectRatio="none"><path class="river" d="M-5 60C60 40 100 70 150 44S240 10 305 22"/><path class="road" d="M60 -5 90 85"/></svg>
+        <span class="art-pin" style="left:50%;top:50%">${iconOf(p)}</span>
+      </div></div>`;
+  },
+  // Réglages → petite carte : le choix passe de Plan à Satellite, la carte suit
+  sheetlayer: () => {
+    const p = { up: "UP Alpes", geh: "GEH Ecrins Vercors" };
+    return `<div class="art-views art-layer"><span class="plan">Plan</span><span class="sat">Satellite</span><span>Masquée</span></div>
+      <div class="art-sheet"><b>GRAND'MAISON</b>
+      <div class="art-minimap">
+        <svg class="art-terrain" viewBox="0 0 300 80" preserveAspectRatio="none"><path class="river" d="M-5 60C60 40 100 70 150 44S240 10 305 22"/><path class="road" d="M60 -5 90 85"/></svg>
+        <span class="art-sat"></span>
         <span class="art-pin" style="left:50%;top:50%">${iconOf(p)}</span>
       </div></div>`;
   },
