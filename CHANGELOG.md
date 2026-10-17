@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.1
+- Réglages (et les autres fiches) : à l'ouverture, le bouton « Fermer » n'est plus entouré. `showModal()` donnait le focus au premier bouton, que Safari entourait ; le focus va maintenant au contenu de la fiche (`tabindex="-1" autofocus`, sans contour), comme pour les nouveautés.
+
 ## 1.15.0
 - Réglages → **« Petite carte de la fiche »** : Plan, Satellite ou Masquée (clé `sheetMap` du localStorage). Tant que rien n'est choisi, la petite carte garde le fond de la carte « Autour de moi », comme avant. Fiche dans les nouveautés.
 

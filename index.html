@@ -96,7 +96,7 @@
   </main>
 
   <dialog class="sheet" id="sheet" aria-labelledby="sheetName">
-    <div class="sheet-body">
+    <div class="sheet-body" tabindex="-1" autofocus>
       <div class="sheet-head">
         <div>
           <h2 id="sheetName"></h2>
@@ -200,7 +200,7 @@
 
   <!-- Légende de la carte : afficher ou masquer chaque UP -->
   <dialog class="sheet" id="legend" aria-labelledby="legendTitle">
-    <div class="sheet-body settings legend">
+    <div class="sheet-body settings legend" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="legendTitle">Légende</h2>
         <button type="button" class="link" id="legendClose">Fermer</button>
@@ -212,7 +212,7 @@
 
   <!-- Aide à l'installation (iPhone : pas d'installation automatique possible) -->
   <dialog class="sheet" id="installHelp" aria-labelledby="installHelpTitle">
-    <div class="sheet-body settings">
+    <div class="sheet-body settings" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="installHelpTitle">Installer l'appli</h2>
         <button type="button" class="link" id="installHelpClose">Fermer</button>
@@ -231,7 +231,7 @@
 
   <!-- Fichier de favoris : charger un fichier existant ou en créer un (voir FavFile dans app.js) -->
   <dialog class="sheet" id="favFile" aria-labelledby="favFileTitle">
-    <div class="sheet-body settings">
+    <div class="sheet-body settings" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="favFileTitle">Sauvegarde des favoris</h2>
         <button type="button" class="link" id="favFileLater">Plus tard</button>
@@ -269,7 +269,7 @@
 
   <!-- Nouveautés : liste par version (Réglages → À propos) -->
   <dialog class="sheet" id="newsAll" aria-labelledby="newsAllTitle">
-    <div class="sheet-body settings legend">
+    <div class="sheet-body settings legend" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="newsAllTitle">Nouveautés</h2>
         <button type="button" class="link" id="newsAllClose">Fermer</button>
@@ -281,7 +281,7 @@
 
   <!-- Réglages : liste partagée et code d'édition -->
   <dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
-    <div class="sheet-body settings">
+    <div class="sheet-body settings" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="settingsTitle">Réglages</h2>
         <button type="button" class="link" id="setClose">Fermer</button>

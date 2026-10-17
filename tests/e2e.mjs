@@ -135,8 +135,10 @@ try {
   // Code d'édition
   await A.click("#openSettings");
   assert.equal(await A.isVisible("#setControl"), false);
+  // le focus d'ouverture va au contenu de la fiche, pas au bouton « Fermer » (entouré sur iPhone)
+  assert.equal(await A.evaluate(() => document.activeElement.matches("#settings .sheet-body")), true);
   assert.match(await A.textContent("#setVersion"), /^Version \d+\.\d+\.\d+ \(cache \d{4}-\d{2}-\d{2}\.\d+\)$/);
-  ok("réglages : numéro de version et de cache affichés");
+  ok("réglages : numéro de version et de cache affichés, « Fermer » sans focus à l'ouverture");
   await A.fill("#setToken", "bad"); await A.click("#setTokenGo"); await A.waitForTimeout(300);
   assert.match(await A.$eval("#setTokenMsg", (e) => e.textContent), /pas valide/);
   await A.fill("#setToken", "good"); await A.click("#setTokenGo"); await A.waitForTimeout(500);

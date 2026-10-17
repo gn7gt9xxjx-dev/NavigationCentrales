@@ -68,6 +68,8 @@ button, input { font: inherit; color: inherit; }
 button { background: none; border: 0; cursor: pointer; }
 svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 :focus-visible { outline: 3px solid var(--sign); outline-offset: 2px; border-radius: 8px; }
+/* Fenêtres : le focus d'ouverture va au contenu (autofocus), sans contour, plutôt qu'au premier bouton (« Fermer ») */
+.sheet-body:focus-visible { outline: none; }
 
 /* ---------- En-tête ---------- */
 .top {
