@@ -361,6 +361,30 @@ try {
   assert.equal(await C.isVisible("#sheetMap"), true);
   await C.click("#close"); await C.waitForTimeout(200);
   ok("carte : la recherche filtre les centrales, toucher une centrale ouvre sa fiche avec la petite carte et son UP · GEH");
+  // Réglages → « Petite carte de la fiche » : Plan, Satellite ou Masquée
+  const sheetTiles = () => C.$$eval("#smap img.leaflet-tile", (t) => t.map((i) => i.src).join(" "));
+  await C.click("#openSettings");
+  assert.equal(await C.getAttribute('#setSheetMap [data-layer="plan"]', "aria-pressed"), "true");
+  await C.click('#setSheetMap [data-layer="sat"]');
+  assert.equal(await C.getAttribute('#setSheetMap [data-layer="sat"]', "aria-pressed"), "true");
+  assert.equal(await C.getAttribute('#setSheetMap [data-layer="plan"]', "aria-pressed"), "false");
+  await C.click("#setClose");
+  await C.click("#nmap .mk"); await C.waitForTimeout(600);
+  assert.match(await sheetTiles(), /arcgisonline/);
+  assert.doesNotMatch(await sheetTiles(), /openstreetmap/);
+  assert.equal(await C.$$eval("#nmap img.leaflet-tile", (t) => t.some((i) => i.src.includes("openstreetmap"))), true);   // la grande carte garde son fond
+  await C.click("#close"); await C.waitForTimeout(200);
+  await C.click("#openSettings"); await C.click('#setSheetMap [data-layer="off"]'); await C.click("#setClose");
+  await C.click("#nmap .mk"); await C.waitForTimeout(600);
+  assert.equal(await C.isVisible("#sheet"), true);
+  assert.equal(await C.isVisible("#sheetMap"), false);
+  await C.click("#close"); await C.waitForTimeout(200);
+  await C.click("#openSettings"); await C.click('#setSheetMap [data-layer="plan"]'); await C.click("#setClose");
+  await C.click("#nmap .mk"); await C.waitForTimeout(600);
+  assert.equal(await C.isVisible("#sheetMap"), true);
+  assert.match(await sheetTiles(), /openstreetmap/);
+  await C.click("#close"); await C.waitForTimeout(200);
+  ok("réglages → petite carte de la fiche : Satellite, Masquée puis Plan");
   await C.fill("#q", ""); await C.waitForTimeout(300);
   await C.click("#nmLegend"); await C.waitForTimeout(300);
   const before = await markers();
