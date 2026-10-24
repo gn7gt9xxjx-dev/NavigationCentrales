@@ -2240,12 +2240,13 @@ $("#installHelp").addEventListener("click", (e) => { if (e.target === $("#instal
 
 // Le geste « retour » d'Android (balayage depuis le bord) fermait l'appli, ou laissait un écran
 // vide. Une entrée d'historique le retient : il ferme la fenêtre ouverte (ou la ligne balayée),
-// sinon il ne fait rien, comme sur iPhone. Chrome : l'entrée est ajoutée pendant un toucher (il
-// saute au retour celles ajoutées sans geste). Firefox : dès le lancement, car un simple défilement
-// ne déclenche pas pointerup, et son appli installée a une page vide avant la nôtre.
+// sinon il ne fait rien, comme sur iPhone. L'entrée n'est ajoutée qu'à la fin d'un premier toucher
+// (touchend : aussi après un simple défilement) : Firefox saute au retour les entrées que
+// l'utilisateur n'a pas touchées (et son appli installée a une page vide avant la nôtre) ; Chrome,
+// celles ajoutées sans geste, tant qu'il n'y a pas eu de toucher.
 if (/Android/.test(navigator.userAgent)) {
   const guard = () => { if (!history.state?.guard) history.pushState({ guard: true }, ""); };
-  if (isFirefoxAndroid) guard();
+  document.addEventListener("touchend", guard, { capture: true, passive: true });
   document.addEventListener("pointerup", guard, true);
   window.addEventListener("popstate", () => {
     const open = [...document.querySelectorAll("dialog[open]")];

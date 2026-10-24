@@ -83,12 +83,18 @@ try {
   ok("Safari sur iPhone : la croix « Déjà installée » masque le bandeau d'installation, même au lancement suivant");
   {
     const UA_FX = "Mozilla/5.0 (Android 14; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0";
-    const { ctx, page } = await phone("Pixel 7", { userAgent: UA_FX });
-    // Retour : entrée d'historique dès le lancement, avant tout toucher (un défilement n'en fait pas)
+    const { ctx, page } = await phone("Pixel 7", { userAgent: UA_FX, tutorial: true });
+    // Retour : pas d'entrée d'historique au lancement (Firefox sauterait notre page, jamais touchée),
+    // mais dès la fin du premier toucher, même un simple défilement (touchend)
+    assert.equal(await page.evaluate(() => history.state), null);
+    await page.evaluate(() => document.body.dispatchEvent(new TouchEvent("touchend", { bubbles: true })));
     assert.equal(await page.evaluate(() => history.state?.guard), true);
-    assert.equal(await page.isVisible("#favFile"), true);
+    assert.equal(await page.isVisible("#news"), true);
     await page.evaluate(() => history.back()); await page.waitForTimeout(400);
-    assert.equal(await page.isVisible("#favFile"), false);   // la question des favoris est refermée
+    assert.equal(await page.isVisible("#news"), false);      // le didacticiel est refermé…
+    assert.equal(await page.isVisible("#favFile"), true);    // …la question des favoris suit
+    await page.evaluate(() => history.back()); await page.waitForTimeout(400);
+    assert.equal(await page.isVisible("#favFile"), false);
     await page.evaluate(() => history.back()); await page.waitForTimeout(400);
     assert.equal(await page.isVisible(".row"), true);        // puis rien : on reste dans l'appli
     assert.equal(await page.evaluate(() => history.state?.guard), true);
@@ -128,7 +134,7 @@ try {
     assert.equal((await A.request.get(URL_APP + mask[0].src)).status(), 200);
     assert.ok(readFileSync(join(root, "sw.js"), "utf8").includes(`"${mask[0].src}"`));
   }
-  ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps, icône maskable à part, retour retenu dès le lancement ; étapes propres à Chrome sur iPhone");
+  ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps, icône maskable à part, retour retenu dès le premier toucher ; étapes propres à Chrome sur iPhone");
 
   {
     const back = async (p) => { await p.evaluate(() => history.back()); await p.waitForTimeout(400); };
