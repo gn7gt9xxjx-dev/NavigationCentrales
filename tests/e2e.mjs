@@ -112,7 +112,16 @@ try {
     assert.doesNotMatch(await page.textContent("#installSteps"), /Safari|barre d'adresse/);
     await ctx.close();
   }
-  ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps ; étapes propres à Chrome sur iPhone");
+  {
+    // Firefox (Android) : l'icône maskable doit avoir sa propre adresse, sinon il prend l'icône normale
+    const icons = (await (await A.request.get(URL_APP + "manifest.webmanifest")).json()).icons;
+    const mask = icons.filter((i) => i.purpose === "maskable");
+    assert.equal(mask.length, 1);
+    assert.equal(icons.filter((i) => i.src === mask[0].src).length, 1);
+    assert.equal((await A.request.get(URL_APP + mask[0].src)).status(), 200);
+    assert.ok(readFileSync(join(root, "sw.js"), "utf8").includes(`"${mask[0].src}"`));
+  }
+  ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps, icône maskable à part ; étapes propres à Chrome sur iPhone");
 
   // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
   {

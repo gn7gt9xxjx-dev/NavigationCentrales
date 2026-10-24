@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.3
+- **Firefox sur Android** : l'icône sur l'écran d'accueil occupe toute la place, comme avec Chrome, au lieu d'être réduite sur un fond clair. Firefox préfère l'icône « maskable », mais deux icônes du manifeste à la même adresse comptent pour une seule à ses yeux : il prenait la version normale (`icon-512.png`, rangée avant) et l'entourait de `background_color`. L'icône maskable a maintenant son propre fichier, `icons/icon-maskable-512.png` (même image, produite par `npm run icons`). Pour en profiter : supprimer l'icône de l'écran d'accueil et réinstaller depuis Firefox.
+
 ## 1.15.2
 - **Firefox sur Android** : il n'a pas d'invite d'installation (`beforeinstallprompt`) ; le bandeau « Installer » s'affiche quand même, avec les étapes (menu ⋮ → « Installer »), et la croix « Déjà installée » comme sur iPhone. Les liens Waze / Google Maps passent par `intent:` (paquet de l'appli, page web en secours) : Firefox ouvre par défaut les liens `https://` dans le navigateur, donc sans l'appli et sans réseau.
 - **iPhone, autres navigateurs que Safari** (Chrome, Firefox, Edge…) : depuis iOS 16.4, ils savent ajouter l'appli à l'écran d'accueil. L'aide d'installation donne les étapes du navigateur utilisé au lieu de renvoyer vers Safari (Safari seulement si l'option manque).

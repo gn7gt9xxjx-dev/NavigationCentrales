@@ -1,7 +1,7 @@
 // Service worker : met toute l'appli en cache pour qu'elle s'ouvre sans réseau.
 // ➜ Changez VERSION à chaque modification (liste des centrales, design…)
 //   pour que les téléphones téléchargent la nouvelle version.
-const VERSION = "2026-10-24.1";
+const VERSION = "2026-10-24.2";
 const CACHE = `centrales-${VERSION}`;
 
 const FILES = [
@@ -16,6 +16,7 @@ const FILES = [
   "icons/apple-touch-icon.png",
   "icons/icon-192.png",
   "icons/icon-512.png",
+  "icons/icon-maskable-512.png",
   "fonts/barlow-semi-condensed-latin-500-normal.woff2",
   "fonts/barlow-semi-condensed-latin-600-normal.woff2",
   "fonts/barlow-semi-condensed-latin-700-normal.woff2",
