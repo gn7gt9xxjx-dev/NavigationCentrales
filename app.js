@@ -1498,7 +1498,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.15.2";
+const APP_VERSION = "1.15.3";
 
 async function renderVersion() {
   let cache = "";
@@ -1524,6 +1524,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.15.3", date: "24 octobre 2026", fixes: [
+    "Firefox sur Android : l'icône de l'appli occupe toute la place, comme avec Chrome.",
+  ] },
   { v: "1.15.2", date: "24 octobre 2026", fixes: [
     "Firefox sur Android : bandeau « Installer » avec les étapes, Waze et Google Maps s'ouvrent dans leur appli.",
     "iPhone : installation expliquée aussi depuis Chrome, Firefox ou Edge.",

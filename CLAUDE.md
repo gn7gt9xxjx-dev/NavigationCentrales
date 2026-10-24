@@ -39,7 +39,7 @@ manifest.webmanifest  installation (nom « Centrales », icônes, standalone)
 data/centrales.json   copie de secours embarquée (1er lancement hors ligne) ; la source de vérité est le dépôt DataNavigationCentrales
 icons/icon.svg        icône source ; PNG générés par `npm run icons`
 tools/extract.py      régénère data/centrales.json depuis l'ancienne page HTML
-tools/render-icons.mjs  SVG → apple-touch-icon.png (180), icon-192.png, icon-512.png
+tools/render-icons.mjs  SVG → apple-touch-icon.png (180), icon-192.png, icon-512.png, icon-maskable-512.png
 CHANGELOG.md          historique des versions (numéro `APP_VERSION`)
 tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitHub)
 ```
@@ -79,6 +79,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 - iPhone : liens par schémas d'appli (`waze://`, `comgooglemaps://`, `maps://`) — ils s'ouvrent hors ligne et depuis une PWA en plein écran. Android / ordinateur : liens `https://` classiques, bouton Plans masqué. Détection : `isApple`.
 - Firefox sur Android (`isFirefoxAndroid`) : pas de `beforeinstallprompt` → bandeau « Installer » avec étapes et croix « Déjà installée », comme sur iPhone (`installSteps()` donne les étapes du navigateur : Safari, Chrome, Firefox/Edge sur iPhone, Firefox sur Android). Il ouvre les liens `https://` dans le navigateur par défaut : Waze / Google Maps passent par `intent://…;package=…;S.browser_fallback_url=…` (`androidApp`).
 - Sur iOS, l'appli installée et Safari **ne partagent pas** leur stockage : le code d'édition doit être saisi dans l'appli lancée depuis l'icône.
+- Icône « maskable » du manifeste : **fichier à part** (`icon-maskable-512.png`). Firefox (Android) compte deux icônes à la même adresse pour une seule et prendrait la version normale, réduite sur un fond clair.
 - `apple-touch-icon` doit rester un PNG 180×180 opaque, pleine taille (iOS arrondit lui-même les coins). Pas de favicon SVG (iOS l'affiche réduit).
 - `<dialog>` + `showModal()` pour toutes les fenêtres ; les zones sûres sont gérées par `env(safe-area-inset-*)`.
 - **Sauf l'écran d'ajout (`#editor`)** : ouvert par `show()`, il **remplace** l'en-tête et la liste (retirés de la page, position de la liste rendue à la fermeture) au lieu d'être posé dessus. Une fenêtre fixe plein écran au-dessus d'une longue page se comporte mal avec le clavier iOS (liste visible à travers le clavier, touchers et défilement qui atteignent la liste, clignotements). Ne pas revenir à `showModal()` pour lui.

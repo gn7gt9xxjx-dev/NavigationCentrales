@@ -11,6 +11,9 @@ const targets = [
   ["icons/apple-touch-icon.png", 180],
   ["icons/icon-192.png", 192],
   ["icons/icon-512.png", 512],
+  // Fichier à part pour « maskable » : Firefox (Android) traite deux icônes à la même adresse
+  // comme une seule et prend alors la version normale, posée sur un fond clair.
+  ["icons/icon-maskable-512.png", 512],
 ];
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
