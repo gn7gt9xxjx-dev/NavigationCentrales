@@ -2,6 +2,11 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.2
+- **Firefox sur Android** : il n'a pas d'invite d'installation (`beforeinstallprompt`) ; le bandeau « Installer » s'affiche quand même, avec les étapes (menu ⋮ → « Installer »), et la croix « Déjà installée » comme sur iPhone. Les liens Waze / Google Maps passent par `intent:` (paquet de l'appli, page web en secours) : Firefox ouvre par défaut les liens `https://` dans le navigateur, donc sans l'appli et sans réseau.
+- **iPhone, autres navigateurs que Safari** (Chrome, Firefox, Edge…) : depuis iOS 16.4, ils savent ajouter l'appli à l'écran d'accueil. L'aide d'installation donne les étapes du navigateur utilisé au lieu de renvoyer vers Safari (Safari seulement si l'option manque).
+- Mises à jour : rien à changer, le bandeau « Mettre à jour » (service worker) marche dans tous ces navigateurs.
+
 ## 1.15.1
 - Réglages (et les autres fiches) : à l'ouverture, le bouton « Fermer » n'est plus entouré. `showModal()` donnait le focus au premier bouton, que Safari entourait ; le focus va maintenant au contenu de la fiche (`tabindex="-1" autofocus`, sans contour), comme pour les nouveautés.
 
