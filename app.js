@@ -51,6 +51,7 @@ function formatKm(km) {
 const formatCoord = (v) => v.toFixed(5).replace(/0+$/, "").replace(/\.$/, "");
 
 const isApple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
+const isAndroid = !isApple && /Android/.test(navigator.userAgent);
 const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 // Ordinateur (ni iPhone/iPad, ni Android) : navigation dans un nouvel onglet.
 const isDesktop = !isApple && !/Android|Mobi/i.test(navigator.userAgent);
@@ -911,6 +912,8 @@ function swipeDelete(li) {
   setTimeout(() => removeRecent(li.dataset.id), 380);
 }
 
+const EDGE = 32;   // px : zone du geste « retour » d'Android, le long des bords
+
 function bindSwipe() {
   const list = $("#list");
 
@@ -923,6 +926,8 @@ function bindSwipe() {
       if (list.contains(e.target)) swipeEatClick = true;
     }
     if (!li || e.button > 0 || e.target.closest(".swipe-actions") || li.classList.contains("leaving")) return;
+    // Android : un geste parti du bord de l'écran est le geste « retour », pas un balayage de ligne
+    if (isAndroid && (e.clientX < EDGE || e.clientX > innerWidth - EDGE)) return;
     const base = li === swipeOpen ? -swipeWidth(li) : 0;
     swipeDrag = { li, id: e.pointerId, x0: e.clientX, y0: e.clientY, base, x: base, moved: false, lastX: e.clientX, lastT: e.timeStamp, vx: 0 };
   });
@@ -1526,6 +1531,7 @@ const cmpVersion = (a, b) => {
 const NEWS = [
   { v: "1.15.5", date: "24 octobre 2026", fixes: [
     "Firefox sur Android : le geste retour ne laisse plus d'écran vide, même juste après avoir fait défiler la liste.",
+    "Android : le geste retour ne fait plus sauter la liste ; parti du bord, il n'ouvre plus les boutons d'une ligne.",
   ] },
   { v: "1.15.4", date: "24 octobre 2026", fixes: [
     "Android : le geste retour ferme la fenêtre ouverte et ne quitte plus l'appli.",
@@ -2244,7 +2250,9 @@ $("#installHelp").addEventListener("click", (e) => { if (e.target === $("#instal
 // (touchend : aussi après un simple défilement) : Firefox saute au retour les entrées que
 // l'utilisateur n'a pas touchées (et son appli installée a une page vide avant la nôtre) ; Chrome,
 // celles ajoutées sans geste, tant qu'il n'y a pas eu de toucher.
-if (/Android/.test(navigator.userAgent)) {
+if (isAndroid) {
+  // Le retour ne doit pas non plus faire sauter la liste vers une ancienne position
+  history.scrollRestoration = "manual";
   const guard = () => { if (!history.state?.guard) history.pushState({ guard: true }, ""); };
   document.addEventListener("touchend", guard, { capture: true, passive: true });
   document.addEventListener("pointerup", guard, true);

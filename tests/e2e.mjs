@@ -158,6 +158,27 @@ try {
     await back(page);
     assert.equal(await page.isVisible("#editor"), false);   // écran d'ajout (non modal) refermé
     assert.equal(await page.isVisible(".row"), true);
+    // Le retour ne fait pas sauter la liste (ni en haut, ni à une ancienne position)
+    await page.evaluate(() => scrollTo(0, 3000)); await page.waitForTimeout(200);
+    await back(page);
+    assert.equal(await page.evaluate(() => scrollY), 3000);
+    await page.evaluate(() => scrollTo(0, 1200)); await page.waitForTimeout(200);
+    await back(page); await back(page);
+    assert.equal(await page.evaluate(() => scrollY), 1200);
+    // Balayage parti du bord droit : geste retour d'Android, la ligne ne bouge pas ; un peu plus loin, si
+    const sweep = async (x0) => {
+      const row = page.locator(".swipe").nth(3);
+      await row.scrollIntoViewIfNeeded(); await page.waitForTimeout(200);
+      const b = await row.boundingBox(), y = b.y + b.height / 2;
+      await page.mouse.move(x0, y); await page.mouse.down();
+      for (let i = 1; i <= 10; i++) await page.mouse.move(x0 - 12 * i, y);
+      const moved = await row.evaluate((li) => li.classList.contains("dragging"));
+      await page.mouse.up(); await page.waitForTimeout(500);
+      return moved;
+    };
+    const width = await page.evaluate(() => innerWidth);
+    assert.equal(await sweep(width - 4), false);
+    assert.equal(await sweep(width - 60), true);
     assert.deepEqual(page.errors, []);
     await ctx.close();
     const { ctx: ctxI, page: I } = await phone();
