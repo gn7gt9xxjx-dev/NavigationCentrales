@@ -123,6 +123,37 @@ try {
   }
   ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps, icône maskable à part ; étapes propres à Chrome sur iPhone");
 
+  {
+    const back = async (p) => { await p.evaluate(() => history.back()); await p.waitForTimeout(400); };
+    const { ctx, page } = await phone("Pixel 7");
+    await page.click("#favFileLater"); await page.waitForTimeout(300);
+    await page.click(".row"); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#sheet"), true);
+    await back(page);
+    assert.equal(await page.isVisible("#sheet"), false);   // le retour ferme la fiche…
+    assert.equal(await page.evaluate(() => history.state?.guard), true);
+    await back(page);
+    assert.equal(page.url(), URL_APP);                     // …puis ne fait rien
+    assert.equal(await page.isVisible(".row"), true);
+    await page.click("#openSettings"); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#settings"), true);
+    await back(page);
+    assert.equal(await page.isVisible("#settings"), false);
+    assert.equal(await page.isVisible(".row"), true);
+    await page.evaluate(() => Editor.open()); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#editor"), true);
+    await back(page);
+    assert.equal(await page.isVisible("#editor"), false);   // écran d'ajout (non modal) refermé
+    assert.equal(await page.isVisible(".row"), true);
+    assert.deepEqual(page.errors, []);
+    await ctx.close();
+    const { ctx: ctxI, page: I } = await phone();
+    await I.click(".row"); await I.waitForTimeout(300);
+    assert.equal(await I.evaluate(() => history.state), null);   // iPhone : historique inchangé
+    await ctxI.close();
+  }
+  ok("Android : le geste retour ferme la fiche ou les réglages, sinon ne quitte pas l'appli");
+
   // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
   {
     const { ctx, page } = await phone("Pixel 7", { tutorial: true });

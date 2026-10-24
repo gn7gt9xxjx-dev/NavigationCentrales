@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.4
+- **Android, geste « retour »** (balayage depuis le bord de l'écran, ou bouton retour) : il ne quitte plus l'appli et ne laisse plus d'écran vide. Il ferme la fenêtre ouverte (fiche, réglages, écran d'ajout…) ou la ligne balayée, sinon il ne fait rien, comme sur iPhone. Une entrée d'historique (`history.pushState`) est ajoutée au premier toucher et remise après chaque retour.
+
 ## 1.15.3
 - **Firefox sur Android** : l'icône sur l'écran d'accueil occupe toute la place, comme avec Chrome, au lieu d'être réduite sur un fond clair. Firefox préfère l'icône « maskable », mais deux icônes du manifeste à la même adresse comptent pour une seule à ses yeux : il prenait la version normale (`icon-512.png`, rangée avant) et l'entourait de `background_color`. L'icône maskable a maintenant son propre fichier, `icons/icon-maskable-512.png` (même image, produite par `npm run icons`). Pour en profiter : supprimer l'icône de l'écran d'accueil et réinstaller depuis Firefox.
 
