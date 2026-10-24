@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.15.5
+- **Firefox sur Android, geste « retour »** : il laissait encore un écran vide (la page blanche que l'appli installée par Firefox a avant la nôtre) quand on avait seulement fait défiler la liste : un défilement ne déclenche pas `pointerup`, donc l'entrée d'historique n'était pas encore ajoutée. Dans Firefox, elle l'est dès le lancement (pas de règle « geste de l'utilisateur » comme dans Chrome).
+
 ## 1.15.4
 - **Android, geste « retour »** (balayage depuis le bord de l'écran, ou bouton retour) : il ne quitte plus l'appli et ne laisse plus d'écran vide. Il ferme la fenêtre ouverte (fiche, réglages, écran d'ajout…) ou la ligne balayée, sinon il ne fait rien, comme sur iPhone. Une entrée d'historique (`history.pushState`) est ajoutée au premier toucher et remise après chaque retour.
 

@@ -1498,7 +1498,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.15.4";
+const APP_VERSION = "1.15.5";
 
 async function renderVersion() {
   let cache = "";
@@ -1524,6 +1524,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.15.5", date: "24 octobre 2026", fixes: [
+    "Firefox sur Android : le geste retour ne laisse plus d'écran vide, même juste après avoir fait défiler la liste.",
+  ] },
   { v: "1.15.4", date: "24 octobre 2026", fixes: [
     "Android : le geste retour ferme la fenêtre ouverte et ne quitte plus l'appli.",
   ] },
@@ -2237,10 +2240,12 @@ $("#installHelp").addEventListener("click", (e) => { if (e.target === $("#instal
 
 // Le geste « retour » d'Android (balayage depuis le bord) fermait l'appli, ou laissait un écran
 // vide. Une entrée d'historique le retient : il ferme la fenêtre ouverte (ou la ligne balayée),
-// sinon il ne fait rien, comme sur iPhone. L'entrée est ajoutée pendant un toucher : Chrome
-// ignore au retour celles ajoutées sans geste de l'utilisateur.
+// sinon il ne fait rien, comme sur iPhone. Chrome : l'entrée est ajoutée pendant un toucher (il
+// saute au retour celles ajoutées sans geste). Firefox : dès le lancement, car un simple défilement
+// ne déclenche pas pointerup, et son appli installée a une page vide avant la nôtre.
 if (/Android/.test(navigator.userAgent)) {
   const guard = () => { if (!history.state?.guard) history.pushState({ guard: true }, ""); };
+  if (isFirefoxAndroid) guard();
   document.addEventListener("pointerup", guard, true);
   window.addEventListener("popstate", () => {
     const open = [...document.querySelectorAll("dialog[open]")];
