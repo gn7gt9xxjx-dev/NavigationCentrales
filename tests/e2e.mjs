@@ -39,8 +39,9 @@ const initial = count();
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
 // standalone : appli lancée depuis l'écran d'accueil (iPhone). tutorial : garder le didacticiel
 // du premier lancement ouvert (sinon il est passé).
-async function phone(device = "iPhone 15 Pro", { standalone = false, tutorial = false } = {}) {
-  const ctx = await browser.newContext({ ...devices[device], locale: "fr-FR", geolocation: { latitude: 45.2, longitude: 5.9 }, permissions: ["geolocation"] });
+// userAgent : autre navigateur (Firefox, Chrome sur iPhone…).
+async function phone(device = "iPhone 15 Pro", { standalone = false, tutorial = false, userAgent } = {}) {
+  const ctx = await browser.newContext({ ...devices[device], ...(userAgent && { userAgent }), locale: "fr-FR", geolocation: { latitude: 45.2, longitude: 5.9 }, permissions: ["geolocation"] });
   await ctx.route(/api\.github\.com|raw\.githubusercontent\.com/, github);
   await ctx.route(/tile\.openstreetmap|arcgisonline|nominatim/, (r) => r.fulfill({ status: 204 }));
   if (standalone) await ctx.addInitScript(() => Object.defineProperty(navigator, "standalone", { get: () => true }));
@@ -80,6 +81,38 @@ try {
     await ctx.close();
   }
   ok("Safari sur iPhone : la croix « Déjà installée » masque le bandeau d'installation, même au lancement suivant");
+  {
+    const UA_FX = "Mozilla/5.0 (Android 14; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0";
+    const { ctx, page } = await phone("Pixel 7", { userAgent: UA_FX });
+    assert.equal(await page.isVisible("#install"), true);
+    assert.equal(await page.isVisible("#installNo"), true);
+    await page.click("#favFileLater"); await page.waitForTimeout(200);
+    await page.click("#installGo"); await page.waitForTimeout(300);
+    assert.match(await page.textContent("#installSteps"), /Dans Firefox.*menu ⋮.*Installer/);
+    await page.click("#installHelpClose"); await page.waitForTimeout(200);
+    await page.click(".row"); await page.waitForTimeout(300);
+    const waze = await page.getAttribute("#goWaze", "href"), gmaps = await page.getAttribute("#goGmaps", "href");
+    assert.match(waze, /^intent:\/\/waze\.com\/ul\?ll=[\d.-]+,[\d.-]+&navigate=yes#Intent;scheme=https;package=com\.waze;S\.browser_fallback_url=https%3A%2F%2Fwaze\.com%2Ful%3Fll%3D.+;end$/);
+    assert.match(gmaps, /^intent:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=[\d.-]+,[\d.-]+#Intent;scheme=https;package=com\.google\.android\.apps\.maps;S\.browser_fallback_url=https%3A%2F%2Fwww\.google\.com%2Fmaps.+;end$/);
+    assert.deepEqual(page.errors, []);
+    await ctx.close();
+  }
+  {
+    const UA_CRIOS = devices["iPhone 15 Pro"].userAgent.replace(/Version\/[\d.]+/, "CriOS/141.0.7390.41");
+    const { ctx, page } = await phone(undefined, { userAgent: UA_CRIOS });
+    await page.click("#installGo"); await page.waitForTimeout(300);
+    const help = await page.textContent("#installSteps");
+    assert.match(help, /barre d'adresse.*Sur l'écran d'accueil/);
+    assert.match(help, /ouvrez cette adresse dans Safari/);
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await phone();
+    await page.click("#installGo"); await page.waitForTimeout(300);
+    assert.doesNotMatch(await page.textContent("#installSteps"), /Safari|barre d'adresse/);
+    await ctx.close();
+  }
+  ok("Firefox sur Android : bandeau et étapes d'installation, liens intent: vers Waze / Google Maps ; étapes propres à Chrome sur iPhone");
 
   // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
   {

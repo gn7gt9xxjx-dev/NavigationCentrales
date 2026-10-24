@@ -210,22 +210,15 @@
     </div>
   </dialog>
 
-  <!-- Aide à l'installation (iPhone : pas d'installation automatique possible) -->
+  <!-- Aide à l'installation (iPhone, Firefox sur Android : pas d'installation automatique possible).
+       Étapes selon le navigateur : installSteps() dans app.js -->
   <dialog class="sheet" id="installHelp" aria-labelledby="installHelpTitle">
     <div class="sheet-body settings" tabindex="-1" autofocus>
       <div class="sheet-head">
         <h2 id="installHelpTitle">Installer l'appli</h2>
         <button type="button" class="link" id="installHelpClose">Fermer</button>
       </div>
-      <section>
-        <p>Sur iPhone, Apple impose de le faire à la main, depuis Safari :</p>
-        <ol class="steps">
-          <li>Touchez le bouton <strong>Partager</strong> (le carré avec une flèche vers le haut), en bas de l'écran.</li>
-          <li>Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.</li>
-          <li>Touchez <strong>Ajouter</strong>.</li>
-        </ol>
-        <p>Ouvrez ensuite l'appli depuis l'icône. Si vous utilisez un autre navigateur que Safari, ouvrez d'abord cette adresse dans Safari.</p>
-      </section>
+      <section id="installSteps"></section>
     </div>
   </dialog>
 

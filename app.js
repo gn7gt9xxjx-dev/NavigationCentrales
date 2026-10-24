@@ -57,14 +57,21 @@ const isDesktop = !isApple && !/Android|Mobi/i.test(navigator.userAgent);
 // Fichier de favoris relié, mis à jour sur place au lieu d'être téléchargé à nouveau :
 // Chrome / Edge sur ordinateur, Chrome ≥ 132 sur Android (pas sur iPhone).
 const canLinkFile = !isApple && "showSaveFilePicker" in window && "showOpenFilePicker" in window;
+// Firefox sur Android : pas d'invite d'installation (étapes expliquées, comme sur iPhone) et les
+// liens https:// restent dans le navigateur (« Ouvrir les liens dans les applis » désactivé par défaut).
+const isFirefoxAndroid = !isApple && /Android/.test(navigator.userAgent) && /Firefox\//.test(navigator.userAgent);
+
+// Firefox sur Android : lien intent: qui désigne l'appli (sinon la page web, si elle n'est pas installée).
+const androidApp = (url, pkg) => !isFirefoxAndroid ? url
+  : `intent://${url.slice("https://".length)}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${encodeURIComponent(url)};end`;
 
 // Liens de navigation. Sur iPhone on passe par les schémas des applis :
 // ils s'ouvrent directement, sans réseau et sans passer par Safari.
 const APPS = {
   waze: (p) => isApple ? `waze://?ll=${p.lat},${p.lon}&navigate=yes`
-                       : `https://waze.com/ul?ll=${p.lat},${p.lon}&navigate=yes`,
+                       : androidApp(`https://waze.com/ul?ll=${p.lat},${p.lon}&navigate=yes`, "com.waze"),
   gmaps: (p) => isApple ? `comgooglemaps://?daddr=${p.lat},${p.lon}&directionsmode=driving`
-                        : `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`,
+                        : androidApp(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`, "com.google.android.apps.maps"),
   plans: (p) => isApple ? `maps://?daddr=${p.lat},${p.lon}&dirflg=d`
                         : `https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=d`,
 };
@@ -1491,7 +1498,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.15.1";
+const APP_VERSION = "1.15.2";
 
 async function renderVersion() {
   let cache = "";
@@ -1517,6 +1524,10 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.15.2", date: "24 octobre 2026", fixes: [
+    "Firefox sur Android : bandeau « Installer » avec les étapes, Waze et Google Maps s'ouvrent dans leur appli.",
+    "iPhone : installation expliquée aussi depuis Chrome, Firefox ou Edge.",
+  ] },
   { v: "1.15.1", date: "17 octobre 2026", fixes: [
     "Réglages et fiches : plus de contour autour de « Fermer » à l'ouverture.",
   ] },
@@ -2149,10 +2160,10 @@ async function init() {
   News.maybeShow(returning);
   FavFile.maybeAsk();   // après les nouveautés, qui l'expliquent
 
-  // iPhone : pas d'installation automatique, on affiche les étapes (voir Installation).
-  // Safari ne sait pas si l'appli est déjà sur l'écran d'accueil : la croix « Déjà installée »
-  // masque le bandeau pour de bon dans ce navigateur.
-  if (isApple && !isStandalone && !store.get("installDismissed", false)) {
+  // iPhone (tous navigateurs) et Firefox sur Android : pas d'installation automatique, on affiche
+  // les étapes (voir Installation). Le navigateur ne sait pas si l'appli est déjà sur l'écran
+  // d'accueil : la croix « Déjà installée » masque le bandeau pour de bon dans ce navigateur.
+  if ((isApple || isFirefoxAndroid) && !isStandalone && !store.get("installDismissed", false)) {
     $("#install").hidden = false;
     $("#installNo").hidden = false;
   }
@@ -2160,9 +2171,31 @@ async function init() {
 
 /* ===================== Installation ===================== */
 
-// Android / ordinateur (Chrome, Edge) : le navigateur fournit une invite d'installation.
-// iPhone : aucune API, on explique la marche à suivre.
+// Android / ordinateur (Chrome, Edge, Samsung Internet…) : le navigateur fournit une invite d'installation.
+// iPhone et Firefox sur Android : aucune API, on explique la marche à suivre, selon le navigateur.
 let installEvent = null;
+
+function installSteps() {
+  const ua = navigator.userAgent;
+  const share = "<strong>Partager</strong> (le carré avec une flèche vers le haut)";
+  const iosEnd = ["Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.", "Touchez <strong>Ajouter</strong>."];
+  if (isFirefoxAndroid) return {
+    intro: "Dans Firefox, passez par le menu :",
+    steps: ["Touchez le menu <strong>⋮</strong>, en haut ou en bas de l'écran.",
+      "Touchez <strong>Installer</strong>. S'il n'y est pas : <strong>Plus</strong>, puis <strong>Ajouter à l'écran d'accueil</strong>.",
+      "Touchez <strong>Ajouter</strong>."],
+    after: "Ouvrez ensuite l'appli depuis l'icône.",
+  };
+  const other = /CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA\//.test(ua);
+  return {
+    intro: "Sur iPhone, Apple impose de le faire à la main :",
+    steps: [/CriOS/.test(ua) ? `Touchez le bouton ${share}, à droite de la barre d'adresse.`
+      : other ? "Ouvrez le menu du navigateur (☰ ou ⋯) et touchez <strong>Partager</strong>."
+      : `Touchez le bouton ${share}, en bas de l'écran. S'il n'y est pas, touchez d'abord <strong>⋯</strong>.`, ...iosEnd],
+    after: "Ouvrez ensuite l'appli depuis l'icône."
+      + (other ? " Si « Sur l'écran d'accueil » n'apparaît pas (iPhone pas à jour), ouvrez cette adresse dans Safari." : ""),
+  };
+}
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
@@ -2178,6 +2211,8 @@ $("#installGo").addEventListener("click", async () => {
     if (outcome === "accepted") $("#install").hidden = true;
     installEvent = null;
   } else {
+    const { intro, steps, after } = installSteps();
+    $("#installSteps").innerHTML = `<p>${intro}</p><ol class="steps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol><p>${after}</p>`;
     $("#installHelp").showModal();
   }
 });

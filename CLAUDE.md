@@ -77,6 +77,7 @@ tests/e2e.mjs         test de bout en bout (iPhone + Android simulés, faux GitH
 
 - Ordinateur (`isDesktop` : ni Apple, ni Android) : Waze / Google Maps en `target="_blank"` (nouvel onglet). Pas sur téléphone : sur Android le lien `https://` ouvre l'appli Waze/Maps et la page reste en place.
 - iPhone : liens par schémas d'appli (`waze://`, `comgooglemaps://`, `maps://`) — ils s'ouvrent hors ligne et depuis une PWA en plein écran. Android / ordinateur : liens `https://` classiques, bouton Plans masqué. Détection : `isApple`.
+- Firefox sur Android (`isFirefoxAndroid`) : pas de `beforeinstallprompt` → bandeau « Installer » avec étapes et croix « Déjà installée », comme sur iPhone (`installSteps()` donne les étapes du navigateur : Safari, Chrome, Firefox/Edge sur iPhone, Firefox sur Android). Il ouvre les liens `https://` dans le navigateur par défaut : Waze / Google Maps passent par `intent://…;package=…;S.browser_fallback_url=…` (`androidApp`).
 - Sur iOS, l'appli installée et Safari **ne partagent pas** leur stockage : le code d'édition doit être saisi dans l'appli lancée depuis l'icône.
 - `apple-touch-icon` doit rester un PNG 180×180 opaque, pleine taille (iOS arrondit lui-même les coins). Pas de favicon SVG (iOS l'affiche réduit).
 - `<dialog>` + `showModal()` pour toutes les fenêtres ; les zones sûres sont gérées par `env(safe-area-inset-*)`.
