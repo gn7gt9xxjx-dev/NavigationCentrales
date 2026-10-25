@@ -121,6 +121,8 @@
         <a class="app app-waze" id="goWaze">Waze</a>
         <a class="app app-gmaps" id="goGmaps">Google Maps</a>
         <a class="app app-plans" id="goPlans">Plans</a>
+        <!-- Autre appli choisie dans Réglages → Applis de navigation (OTHER_APPS dans app.js) -->
+        <a class="app app-other" id="goOther" hidden></a>
       </div>
 
       <div class="sheet-foot">
@@ -293,6 +295,23 @@
         <div class="set-actions">
           <button type="button" class="btn-plain wide" id="setFavSave">Enregistrer le fichier de favoris</button>
           <button type="button" class="btn-plain wide" id="setFavLoad">Charger un fichier de favoris</button>
+        </div>
+      </section>
+
+      <section>
+        <h3>Applis de navigation</h3>
+        <p>Les boutons proposés dans la fiche d'une centrale.</p>
+        <div class="switches" id="setApps">
+          <label class="switch"><span>Waze</span><input type="checkbox" role="switch" data-app="waze"></label>
+          <label class="switch"><span>Google Maps</span><input type="checkbox" role="switch" data-app="gmaps"></label>
+          <label class="switch" id="setAppPlans"><span>Plans</span><input type="checkbox" role="switch" data-app="plans"></label>
+        </div>
+        <div id="setOther">
+          <label class="field">
+            <span>Autre appli</span>
+            <select id="setOtherApp"></select>
+          </label>
+          <small id="setOtherHelp"></small>
         </div>
       </section>
 

@@ -76,6 +76,36 @@ const APPS = {
   plans: (p) => isApple ? `maps://?daddr=${p.lat},${p.lon}&dirflg=d`
                         : `https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=d`,
 };
+// Boutons de la fiche que l'on peut masquer (Réglages → Applis de navigation) ; Plans : iPhone seulement.
+const MAIN_APPS = isApple ? ["waze", "gmaps", "plans"] : ["waze", "gmaps"];
+
+// Autre appli de navigation, ajoutée à la fiche depuis les Réglages. Une page web ne peut pas
+// savoir quelles applis sont installées : on propose les plus courantes.
+// iPhone : schéma propre à chaque appli (rien ne se passe si elle n'est pas installée) ;
+// « Appli par défaut » : geo-navigation:, l'appli choisie dans Réglages › Apps › Apps par défaut (iOS 18.4).
+// Android : lien geo: (toutes les applis GPS le comprennent), donné à l'appli choisie (page du
+// Play Store si elle manque) ou au téléphone, qui propose les applis GPS installées.
+const geoPoint = (p) => `${p.lat},${p.lon}?q=${p.lat},${p.lon}(${encodeURIComponent(p.n)})`;
+const geoApp = (pkg) => (p) => `intent:${geoPoint(p)}#Intent;scheme=geo;package=${pkg};` +
+  `S.browser_fallback_url=${encodeURIComponent(`https://play.google.com/store/apps/details?id=${pkg}`)};end`;
+const OTHER_APPS = isDesktop ? [] : isApple ? [
+  { id: "here", name: "HERE WeGo", url: (p) => `here-route://mylocation/${p.lat},${p.lon},${encodeURIComponent(p.n)}` },
+  { id: "magicearth", name: "Magic Earth", url: (p) => `magicearth://?drive_to&lat=${p.lat}&lon=${p.lon}` },
+  { id: "organic", name: "Organic Maps", url: (p) => `om://map?v=1&ll=${p.lat},${p.lon}&n=${encodeURIComponent(p.n)}` },
+  { id: "osmand", name: "OsmAnd", url: (p) => `osmandmaps://navigate?lat=${p.lat}&lon=${p.lon}&title=${encodeURIComponent(p.n)}` },
+  { id: "sygic", name: "Sygic", url: (p) => `com.sygic.aura://coordinate%7C${p.lon}%7C${p.lat}%7Cdrive` },
+  { id: "tomtom", name: "TomTom GO", url: (p) => `tomtomgo://x-callback-url/navigate?destination=${p.lat},${p.lon}` },
+  { id: "default", name: "Appli par défaut", label: "Appli par défaut de l'iPhone (iOS 18.4)",
+    url: (p) => `geo-navigation:///directions?destination=${p.lat},${p.lon}` },
+] : [
+  { id: "choose", name: "Autre appli GPS", label: "Au choix, parmi les applis du téléphone", url: (p) => `geo:${geoPoint(p)}` },
+  { id: "here", name: "HERE WeGo", url: geoApp("com.here.app.maps") },
+  { id: "magicearth", name: "Magic Earth", url: geoApp("com.generalmagic.magicearth") },
+  { id: "organic", name: "Organic Maps", url: geoApp("app.organicmaps") },
+  { id: "osmand", name: "OsmAnd", url: geoApp("net.osmand") },
+  { id: "sygic", name: "Sygic", url: geoApp("com.sygic.aura") },
+  { id: "tomtom", name: "TomTom GO", url: geoApp("com.tomtom.gplay.navapp") },
+];
 
 function regionOf(lat, lon) {
   if (lat < 0 && lon > 54 && lon < 57) return "La Réunion";
@@ -197,6 +227,8 @@ const state = {
   favs: new Set(store.get("favs", [])),
   recents: store.get("recents", []),
   preferredApp: store.get("preferredApp", ""),
+  hiddenApps: new Set(store.get("hiddenApps", [])),   // boutons masqués dans la fiche (waze, gmaps, plans)
+  otherApp: store.get("otherApp", ""),                // id dans OTHER_APPS ("" = aucune)
   pending: store.get("pending", []),   // modifications en attente d'envoi
   token: store.get("token", ""),       // code d'édition (vide = lecture seule)
   author: store.get("author", ""),
@@ -356,6 +388,22 @@ function locate() {
 
 const sheet = $("#sheet");
 
+const otherApp = () => OTHER_APPS.find((a) => a.id === state.otherApp) || null;
+const appShown = (key) => MAIN_APPS.includes(key) && !state.hiddenApps.has(key);
+// Boutons de la fiche (les Réglages en gardent toujours au moins un)
+const shownApps = () => [...MAIN_APPS.filter(appShown), ...(otherApp() ? ["other"] : [])];
+
+// Sans réseau : Waze ne calcule pas d'itinéraire, les autres marchent avec une zone téléchargée.
+function offlineHint() {
+  const other = otherApp();
+  const maps = [appShown("plans") && "Plans", appShown("gmaps") && "Google Maps",
+    other && (other.id === "default" || other.id === "choose" ? "votre appli GPS" : other.name)].filter(Boolean);
+  let hint = "Pas de réseau :";
+  if (appShown("waze")) hint += " Waze ne pourra pas calculer l'itinéraire.";
+  if (maps.length) hint += ` ${new Intl.ListFormat("fr").format(maps)} ${maps.length > 1 ? "fonctionnent" : "fonctionne"} si la zone a été téléchargée.`;
+  return hint;
+}
+
 function openSheet(p) {
   // iPhone, clavier ouvert : un toucher sur le fond de l'éditeur peut atteindre la liste cachée dessous
   if ($("#editor").open) return;
@@ -376,12 +424,16 @@ function openSheet(p) {
   $("#goWaze").href = APPS.waze(p);
   $("#goGmaps").href = APPS.gmaps(p);
   $("#goPlans").href = APPS.plans(p);
-  for (const [key, el] of [["waze", "#goWaze"], ["gmaps", "#goGmaps"], ["plans", "#goPlans"]]) {
+  const other = otherApp();
+  $("#goOther").hidden = !other;
+  if (other) { $("#goOther").href = other.url(p); $("#goOther").textContent = other.name; }
+  for (const [key, el] of [["waze", "#goWaze"], ["gmaps", "#goGmaps"], ["plans", "#goPlans"], ["other", "#goOther"]]) {
     $(el).classList.toggle("preferred", state.preferredApp === key);
+    if (key !== "other") $(el).hidden = !appShown(key);   // Plans n'existe que sur iPhone
   }
-  $("#goPlans").hidden = !isApple;   // Plans n'existe que sur iPhone
   // Ordinateur : Waze / Google Maps dans un nouvel onglet, l'appli reste ouverte dans le sien
   if (isDesktop) for (const el of ["#goWaze", "#goGmaps", "#goPlans"]) Object.assign($(el), { target: "_blank", rel: "noopener" });
+  $("#offlineHint").textContent = offlineHint();
   $("#offlineHint").hidden = navigator.onLine;
   // petite carte centrée sur la centrale ; sans réseau, pas de fond de carte ; masquable dans Réglages
   $("#sheetMap").hidden = !navigator.onLine || sheetMapLayer() === "off";
@@ -816,6 +868,33 @@ function renderSettings() {
   $("#setFavInfo").textContent = FavFile.info();
   const layer = sheetMapLayer();
   $("#setSheetMap").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.layer === layer));
+  $("#setApps").querySelectorAll("input").forEach((box) => { box.checked = appShown(box.dataset.app); });
+  $("#setOtherApp").value = otherApp()?.id || "";
+}
+
+// Réglages → Applis de navigation : boutons Waze / Google Maps / Plans et autre appli.
+// Au moins un bouton reste dans la fiche.
+function setAppShown(key, shown) {
+  if (shown) state.hiddenApps.delete(key); else state.hiddenApps.add(key);
+  if (!shownApps().length) {
+    state.hiddenApps.delete(key);
+    toast("Gardez au moins une appli de navigation");
+  }
+  store.set("hiddenApps", [...state.hiddenApps]);
+  renderSettings();
+}
+
+function setOtherApp(id) {
+  const before = state.otherApp;
+  state.otherApp = id;
+  if (!shownApps().length) {
+    state.otherApp = before;
+    toast("Gardez au moins une appli de navigation");
+  } else {
+    store.set("otherApp", id);
+    toast(id ? `${otherApp().name} ajoutée à la fiche` : "Autre appli retirée de la fiche");
+  }
+  renderSettings();
 }
 
 function openSettings() {
@@ -1053,6 +1132,7 @@ function bind() {
   $("#goWaze").addEventListener("click", () => launched("waze"));
   $("#goGmaps").addEventListener("click", () => launched("gmaps"));
   $("#goPlans").addEventListener("click", () => launched("plans"));
+  $("#goOther").addEventListener("click", () => launched("other"));
 
   $("#copy").addEventListener("click", async () => {
     const p = state.current;
@@ -1095,6 +1175,15 @@ function bind() {
     store.set("sheetMap", b.dataset.layer);
     renderSettings();
   }));
+  $("#setAppPlans").hidden = !isApple;
+  $("#setApps").querySelectorAll("input").forEach((box) => box.addEventListener("change", () => setAppShown(box.dataset.app, box.checked)));
+  $("#setOther").hidden = !OTHER_APPS.length;   // ordinateur : pas d'autre appli
+  $("#setOtherApp").innerHTML = `<option value="">Aucune</option>` +
+    OTHER_APPS.map((a) => `<option value="${a.id}">${escapeHtml(a.label || a.name)}</option>`).join("");
+  $("#setOtherApp").addEventListener("change", (e) => setOtherApp(e.target.value));
+  $("#setOtherHelp").textContent = nbsp(isApple
+    ? "L'appli doit être installée sur l'iPhone. Changez-la ou choisissez « Aucune » pour retirer son bouton."
+    : "« Au choix » : le téléphone propose ses applis GPS ; touchez « Toujours » pour garder la vôtre. Changez-la ou choisissez « Aucune » pour retirer son bouton.");
   $("#setFavSave").addEventListener("click", () => FavFile.save());
   $("#setFavLoad").addEventListener("click", () => FavFile.pick());
   $("#favBackupGo").addEventListener("click", () => FavFile.save());
@@ -1503,7 +1592,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.15.5";
+const APP_VERSION = "1.16.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1529,6 +1618,17 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.16.0", date: "25 octobre 2026", items: [
+    { art: "navapps", title: "Choisir ses applis de navigation",
+      text: isApple
+        ? "Ajoutez une autre appli GPS à la fiche (Sygic, TomTom GO, HERE WeGo…) et masquez celles dont vous ne vous servez pas."
+        : "Ajoutez une autre appli GPS à la fiche, au choix parmi celles du téléphone, et masquez celles dont vous ne vous servez pas.",
+      steps: [
+        "Ouvrez Réglages, rubrique « Applis de navigation ».",
+        "Dans « Autre appli », choisissez la vôtre : son bouton s'ajoute à la fiche. Changez-la ou choisissez « Aucune » pour la retirer.",
+        `Désactivez Waze, Google Maps${isApple ? " ou Plans" : ""} si vous ne vous en servez pas.`,
+      ] },
+  ] },
   { v: "1.15.5", date: "24 octobre 2026", fixes: [
     "Firefox sur Android : le geste retour ne laisse plus d'écran vide, même juste après avoir fait défiler la liste.",
     "Android : le geste retour ne fait plus sauter la liste ; parti du bord, il n'ouvre plus les boutons d'une ligne.",
@@ -1814,6 +1914,10 @@ const NEWS_ART = {
   pluscode: () => `<p class="art-label">Coordonnées GPS</p>
     <div class="art-card"><div class="art-row"><span><b>XQ5R+9M Arrens-Marsous</b><small>42.958438, -0.208313</small></span></div></div>`,
   update: () => `<div class="art-banner"><span>Une nouvelle version est disponible.</span><span class="art-btn">Mettre à jour</span></div>`,
+  // Réglages → applis de navigation : Waze désactivé, une autre appli s'ajoute à la fiche
+  navapps: () => `<div class="art-card art-switches"><span class="off">Waze<i></i></span><span>Google Maps<i></i></span>
+      <span>Autre appli<b>${isApple ? "Sygic" : "Au choix"}</b></span></div>
+    <div class="art-apps"><span class="app-waze art-gone">Waze</span><span class="app-gmaps">Google Maps</span><span class="app-other art-new">${isApple ? "Sygic" : "Autre appli GPS"}</span></div>`,
   apps: () => `<div class="art-apps"><span class="app-waze">Waze</span><span class="app-gmaps">Google Maps</span>${isApple ? '<span class="app-plans">Plans</span>' : ""}</div>`,
 };
 
