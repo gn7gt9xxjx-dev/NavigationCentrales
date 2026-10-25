@@ -304,6 +304,23 @@ try {
   await B.click(".row"); await B.waitForTimeout(300);
   assert.equal(await B.isVisible("#goPlans"), false);
   ok("autre téléphone (Android) : voit l'ajout, pas de bouton Plans");
+  // Réglages → Applis de navigation (Android) : geo: au choix du téléphone, ou une appli précise
+  await B.click("#close"); await B.waitForTimeout(200);
+  await B.click("#openSettings");
+  assert.equal(await B.isVisible("#setAppPlans"), false);
+  assert.equal(await B.inputValue("#setOtherApp"), "");
+  await B.selectOption("#setOtherApp", "choose"); await B.click("#setClose");
+  await B.click(".row"); await B.waitForTimeout(300);
+  assert.equal(await B.textContent("#goOther"), "Autre appli GPS");
+  assert.match(await B.getAttribute("#goOther", "href"), /^geo:[\d.-]+,[\d.-]+\?q=[\d.-]+,[\d.-]+\(TEST%20AJOUT\)$/);
+  await B.click("#close"); await B.waitForTimeout(200);
+  await B.click("#openSettings"); await B.selectOption("#setOtherApp", "sygic"); await B.uncheck('#setApps [data-app="waze"]'); await B.click("#setClose");
+  await B.click(".row"); await B.waitForTimeout(300);
+  assert.equal(await B.isVisible("#goWaze"), false);
+  assert.equal(await B.textContent("#goOther"), "Sygic");
+  assert.match(await B.getAttribute("#goOther", "href"), /^intent:[\d.-]+,[\d.-]+\?q=.+#Intent;scheme=geo;package=com\.sygic\.aura;S\.browser_fallback_url=https%3A%2F%2Fplay\.google\.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom\.sygic\.aura;end$/);
+  await B.click("#close"); await B.waitForTimeout(200);
+  ok("Android, réglages → applis de navigation : « Au choix » (geo:), Sygic (intent:), Waze masqué");
 
   // Suppression + annulation
   await A.fill("#q", "test ajout"); await A.waitForTimeout(200);
@@ -494,6 +511,38 @@ try {
   assert.match(await sheetTiles(), /openstreetmap/);
   await C.click("#close"); await C.waitForTimeout(200);
   ok("réglages → petite carte de la fiche : Satellite, Masquée puis Plan");
+  // Réglages → Applis de navigation (iPhone) : au moins un bouton reste, autre appli par son schéma
+  await C.click("#openSettings");
+  for (const app of ["waze", "gmaps", "plans"]) assert.equal(await C.isChecked(`#setApps [data-app="${app}"]`), true);
+  await C.uncheck('#setApps [data-app="waze"]'); await C.uncheck('#setApps [data-app="gmaps"]');
+  await C.click('#setApps [data-app="plans"]'); await C.waitForTimeout(100);
+  assert.equal(await C.isChecked('#setApps [data-app="plans"]'), true);      // dernier bouton : refusé
+  assert.equal(await C.textContent("#toastMsg"), "Gardez au moins une appli de navigation");
+  await C.selectOption("#setOtherApp", "sygic");
+  await C.uncheck('#setApps [data-app="plans"]');                           // possible avec l'autre appli
+  await C.selectOption("#setOtherApp", ""); await C.waitForTimeout(100);
+  assert.equal(await C.inputValue("#setOtherApp"), "sygic");                // la retirer : refusé
+  await C.check('#setApps [data-app="plans"]');
+  await C.click("#setClose");
+  await C.click("#nmap .mk"); await C.waitForTimeout(400);
+  assert.deepEqual(await C.$$eval(".apps .app", (a) => a.filter((x) => !x.hidden).map((x) => x.textContent)), ["Plans", "Sygic"]);
+  assert.match(await C.getAttribute("#goOther", "href"), /^com\.sygic\.aura:\/\/coordinate%7C[\d.-]+%7C[\d.-]+%7Cdrive$/);
+  assert.equal(await C.textContent("#offlineHint"), "Pas de réseau : Plans et Sygic fonctionnent si la zone a été téléchargée.");
+  await C.evaluate(() => { document.querySelector("#goOther").href = "#"; });
+  await C.click("#goOther"); await C.waitForTimeout(600);
+  assert.equal(await C.evaluate(() => localStorage.getItem("preferredApp")), '"other"');
+  await C.click("#nmap .mk"); await C.waitForTimeout(400);
+  assert.equal(await C.$eval("#goOther", (a) => getComputedStyle(a).order), "-1");   // dernière utilisée : en premier
+  await C.click("#close"); await C.waitForTimeout(200);
+  await C.click("#openSettings");
+  await C.check('#setApps [data-app="waze"]'); await C.check('#setApps [data-app="gmaps"]');
+  await C.selectOption("#setOtherApp", "");
+  await C.click("#setClose");
+  await C.click("#nmap .mk"); await C.waitForTimeout(400);
+  assert.equal(await C.isVisible("#goOther"), false);
+  assert.equal(await C.isVisible("#goWaze"), true);
+  await C.click("#close"); await C.waitForTimeout(200);
+  ok("iPhone, réglages → applis de navigation : masquer, au moins une appli, Sygic ajoutée puis retirée");
   await C.fill("#q", ""); await C.waitForTimeout(300);
   await C.click("#nmLegend"); await C.waitForTimeout(300);
   const before = await markers();
