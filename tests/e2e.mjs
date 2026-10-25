@@ -523,6 +523,7 @@ try {
   await C.selectOption("#setOtherApp", ""); await C.waitForTimeout(100);
   assert.equal(await C.inputValue("#setOtherApp"), "sygic");                // la retirer : refusé
   await C.check('#setApps [data-app="plans"]');
+  assert.deepEqual(await C.$$eval("#setOtherApp option", (o) => o.map((x) => x.value)), ["", "here", "magicearth", "organic", "osmand", "sygic", "tomtom", "default"]);
   await C.click("#setClose");
   await C.click("#nmap .mk"); await C.waitForTimeout(400);
   assert.deepEqual(await C.$$eval(".apps .app", (a) => a.filter((x) => !x.hidden).map((x) => x.textContent)), ["Plans", "Sygic"]);

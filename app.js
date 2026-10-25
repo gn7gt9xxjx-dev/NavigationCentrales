@@ -89,13 +89,14 @@ const geoPoint = (p) => `${p.lat},${p.lon}?q=${p.lat},${p.lon}(${encodeURICompon
 const geoApp = (pkg) => (p) => `intent:${geoPoint(p)}#Intent;scheme=geo;package=${pkg};` +
   `S.browser_fallback_url=${encodeURIComponent(`https://play.google.com/store/apps/details?id=${pkg}`)};end`;
 const OTHER_APPS = isDesktop ? [] : isApple ? [
-  { id: "default", name: "Appli par défaut", label: "Appli par défaut de l'iPhone (iOS 18.4)",
-    url: (p) => `geo-navigation:///directions?destination=${p.lat},${p.lon}` },
   { id: "here", name: "HERE WeGo", url: (p) => `here-route://mylocation/${p.lat},${p.lon},${encodeURIComponent(p.n)}` },
   { id: "magicearth", name: "Magic Earth", url: (p) => `magicearth://?drive_to&lat=${p.lat}&lon=${p.lon}` },
   { id: "organic", name: "Organic Maps", url: (p) => `om://map?v=1&ll=${p.lat},${p.lon}&n=${encodeURIComponent(p.n)}` },
   { id: "osmand", name: "OsmAnd", url: (p) => `osmandmaps://navigate?lat=${p.lat}&lon=${p.lon}&title=${encodeURIComponent(p.n)}` },
   { id: "sygic", name: "Sygic", url: (p) => `com.sygic.aura://coordinate%7C${p.lon}%7C${p.lat}%7Cdrive` },
+  { id: "tomtom", name: "TomTom GO", url: (p) => `tomtomgo://x-callback-url/navigate?destination=${p.lat},${p.lon}` },
+  { id: "default", name: "Appli par défaut", label: "Appli par défaut de l'iPhone (iOS 18.4)",
+    url: (p) => `geo-navigation:///directions?destination=${p.lat},${p.lon}` },
 ] : [
   { id: "choose", name: "Autre appli GPS", label: "Au choix, parmi les applis du téléphone", url: (p) => `geo:${geoPoint(p)}` },
   { id: "here", name: "HERE WeGo", url: geoApp("com.here.app.maps") },
@@ -103,6 +104,7 @@ const OTHER_APPS = isDesktop ? [] : isApple ? [
   { id: "organic", name: "Organic Maps", url: geoApp("app.organicmaps") },
   { id: "osmand", name: "OsmAnd", url: geoApp("net.osmand") },
   { id: "sygic", name: "Sygic", url: geoApp("com.sygic.aura") },
+  { id: "tomtom", name: "TomTom GO", url: geoApp("com.tomtom.gplay.navapp") },
 ];
 
 function regionOf(lat, lon) {
@@ -1619,7 +1621,7 @@ const NEWS = [
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
       text: isApple
-        ? "Ajoutez une autre appli GPS à la fiche (Sygic, HERE WeGo, Magic Earth…) et masquez celles dont vous ne vous servez pas."
+        ? "Ajoutez une autre appli GPS à la fiche (Sygic, TomTom GO, HERE WeGo…) et masquez celles dont vous ne vous servez pas."
         : "Ajoutez une autre appli GPS à la fiche, au choix parmi celles du téléphone, et masquez celles dont vous ne vous servez pas.",
       steps: [
         "Ouvrez Réglages, rubrique « Applis de navigation ».",
