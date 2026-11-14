@@ -1624,7 +1624,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.17.1";
+const APP_VERSION = "1.17.2";
 
 async function renderVersion() {
   let cache = "";
@@ -1648,8 +1648,18 @@ const cmpVersion = (a, b) => {
 // étapes, illustration `art` dessinée par NEWS_ART) ; présentées une fois juste après la mise à
 // jour, et dans le didacticiel du premier lancement. `editors: true` : présentée seulement aux
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
+// `iphone: true` : seulement dans l'appli installée sur iPhone (présentée et listée).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.17.2", date: "14 novembre 2026", items: [
+    { art: "position", iphone: true, title: "La position sans question chaque jour",
+      text: "L'iPhone redemande chaque jour l'accès à votre position. Autorisez-le une fois pour toutes dans Safari : l'appli garde le réglage.",
+      steps: [
+        "Ouvrez Réglages, rubrique « Position », touchez « Ne plus avoir la question », puis l'adresse de l'appli : elle s'ouvre dans Safari.",
+        "Dans Safari, touchez le menu ☰ à gauche de l'adresse, puis « Réglages du site web ».",
+        "Touchez « Position », choisissez « Autoriser » et validez. Fermez Safari : c'est fini.",
+      ] },
+  ] },
   { v: "1.17.1", date: "14 novembre 2026", fixes: [
     "Position sans question : étapes conformes au Safari actuel (menu ☰, « Position »).",
   ] },
@@ -1958,6 +1968,14 @@ const NEWS_ART = {
   navapps: () => `<div class="art-card art-switches"><span class="off">Waze<i></i></span><span>Google Maps<i></i></span>
       <span>Autre appli<b>${isApple ? "Sygic" : "Au choix"}</b></span></div>
     <div class="art-apps"><span class="app-waze art-gone">Waze</span><span class="app-gmaps">Google Maps</span><span class="app-other art-new">${isApple ? "Sygic" : "Autre appli GPS"}</span></div>`,
+  // Safari : menu ☰ à gauche de l'adresse › Réglages du site web › Position : Demander → Autoriser
+  position: () => `<div class="art-safari"><svg class="ico-inline" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span>${location.host}</span></div>
+    <div class="art-card art-pos">
+      <div class="pa-menu"><div class="art-row">Version pour ordinateur</div><div class="art-row">Réglages du site web…</div></div>
+      <div class="pa-set"><div class="art-row">Micro<small>Demander</small></div>
+        <div class="art-row">Position<span class="pa-val"><small class="ask">Demander</small><small class="ok">Autoriser</small></span></div></div>
+    </div>
+    <span class="art-ring r1"></span><span class="art-ring r2"></span><span class="art-ring r3"></span>`,
   apps: () => `<div class="art-apps"><span class="app-waze">Waze</span><span class="app-gmaps">Google Maps</span>${isApple ? '<span class="app-plans">Plans</span>' : ""}</div>`,
 };
 
@@ -2003,6 +2021,9 @@ const News = (() => {
     show();
   }
 
+  // Fiche réservée à l'appli installée sur iPhone (`iphone`) : ailleurs, ni présentée ni listée.
+  const fits = (it) => !it.iphone || PosHelp.wanted;
+
   // Nouveautés des versions plus récentes que `v`, de la plus ancienne à la plus récente.
   const since = (v) => NEWS.filter((e) => cmpVersion(e.v, v) > 0).reverse()
     .flatMap((e) => (e.items || []).map((it) => ({ ...it, v: e.v })));
@@ -2020,22 +2041,23 @@ const News = (() => {
     const seen = store.get("newsSeen", "") || (returning ? "1.6.0" : "0");
     store.set("newsSeen", APP_VERSION);
     if (state.token) store.set("newsEditorsSeen", APP_VERSION);
-    const list = since(seen).filter((it) => !it.editors || state.token);
+    const list = since(seen).filter((it) => fits(it) && (!it.editors || state.token));
     if (list.length && !document.querySelector("dialog[open]")) open(list, 0, first ? "welcome" : "update");
   }
 
   // Code d'édition validé : fiches réservées à l'édition pas encore vues sur ce téléphone
   function forEditors() {
-    const list = since(store.get("newsEditorsSeen", "") || "0").filter((it) => it.editors);
+    const list = since(store.get("newsEditorsSeen", "") || "0").filter((it) => it.editors && fits(it));
     store.set("newsEditorsSeen", APP_VERSION);
     if (list.length) open(list, 0, "update");
   }
 
   // Toutes les versions : les fonctions nouvelles (flèche → leur fiche), puis les corrections.
   function openAll() {
-    $("#newsAllBody").innerHTML = NEWS.map((e, ei) => `<section class="nw">
+    // Version sans rien à montrer sur ce téléphone (seulement des fiches `iphone`) : pas listée
+    $("#newsAllBody").innerHTML = NEWS.map((e, ei) => !(e.items || []).some(fits) && !e.fixes ? "" : `<section class="nw">
       <h3>Version ${e.v} <small>${e.date}</small></h3>
-      ${(e.items || []).map((it, i) => `<button type="button" class="nw-item" data-e="${ei}" data-i="${i}">
+      ${(e.items || []).map((it, i) => !fits(it) ? "" : `<button type="button" class="nw-item" data-e="${ei}" data-i="${i}">
         <span><b>${escapeHtml(it.title)}</b><small>${escapeHtml(nbsp(it.text))}</small></span>${ICON_CHEV}</button>`).join("")}
       ${(e.fixes || []).map((f) => `<p class="nw-fix">${escapeHtml(nbsp(f))}</p>`).join("")}
     </section>`).join("");

@@ -758,6 +758,41 @@ body.map-view #install { display: none; }
 @keyframes art-seg-on { 0%, 45% { background: transparent; color: var(--muted); } 50%, 95% { background: var(--seg); color: var(--ink); } 100% { background: transparent; color: var(--muted); } }
 @keyframes art-sat { 0%, 45% { opacity: 0; } 50%, 95% { opacity: 1; } 100% { opacity: 0; } }
 
+/* Position sans question (fiche « position ») : menu ☰ de Safari, « Réglages du site web… »,
+   puis Position passe de Demander à Autoriser ; figé sur ce dernier écran si les animations sont réduites */
+.news-art.is-position { gap: 10px; }
+.art-safari {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 20px;
+  background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.08); font-size: .9375rem; font-weight: 600;
+}
+.art-safari span { flex: 1; min-width: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-safari .ico-inline { stroke: var(--ink); }
+.art-pos { position: relative; height: 88px; }
+.art-pos > div { position: absolute; inset: 0; }
+.art-pos .art-row { height: 44px; justify-content: space-between; font-size: .9375rem; font-weight: 600; }
+.art-pos .art-row + .art-row { border-top: 1px solid var(--line); }
+.art-pos small { font-size: .9375rem; font-weight: 600; color: var(--muted); }
+.pa-val { position: relative; }
+.pa-val .ask { position: absolute; right: 0; opacity: 0; animation: pa-ask 6s infinite; }
+.pa-val .ok { color: var(--sign); animation: pa-ok 6s infinite; }
+.pa-menu { opacity: 0; animation: pa-menu 6s infinite; }
+.pa-set { animation: pa-set 6s infinite; }
+.art-ring {
+  position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--sign);
+  opacity: 0; transform: translate(-50%, -50%); pointer-events: none;
+}
+/* Touchers : le menu ☰, « Réglages du site web… », « Autoriser » (positions dans la maquette) */
+.art-ring.r1 { left: 38px; top: 39px; animation: pa-r1 6s infinite; }
+.art-ring.r2 { left: 35%; top: 136px; animation: pa-r2 6s infinite; }
+.art-ring.r3 { left: calc(100% - 60px); top: 136px; animation: pa-r3 6s infinite; }
+@keyframes pa-menu { 0%, 18% { opacity: 0; } 22%, 45% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes pa-set { 0%, 45% { opacity: 0; } 50%, 95% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes pa-ask { 0%, 68% { opacity: 1; } 72%, 100% { opacity: 0; } }
+@keyframes pa-ok { 0%, 68% { opacity: 0; } 72%, 100% { opacity: 1; } }
+@keyframes pa-r1 { 0%, 5% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 10% { opacity: 1; } 18%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); } }
+@keyframes pa-r2 { 0%, 30% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 35% { opacity: 1; } 43%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); } }
+@keyframes pa-r3 { 0%, 60% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 65% { opacity: 1; } 73%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); } }
+
 /* ---------- Fichier de favoris ---------- */
 .set-actions { display: grid; gap: 10px; margin: 12px 0; }
 .btn-primary.wide { width: 100%; }

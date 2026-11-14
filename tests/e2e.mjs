@@ -192,7 +192,8 @@ try {
   // Didacticiel : toutes les fiches (sauf édition) au premier lancement, une seule fois
   {
     const { ctx, page } = await phone("Pixel 7", { tutorial: true });
-    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + (e.items || []).filter((it) => !it.editors).length, 0));
+    // Android : ni les fiches d'édition, ni celles réservées à l'appli installée sur iPhone
+    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + (e.items || []).filter((it) => !it.editors && !it.iphone).length, 0));
     assert.equal(await page.isVisible("#news"), true);
     assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
     assert.equal(await page.textContent("#newsTitle"), "Lancer la navigation, même sans réseau");
@@ -214,6 +215,9 @@ try {
     const { ctx, page } = await phone(undefined, { standalone: true, tutorial: true });
     assert.equal(await page.isVisible("#news"), true);
     assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
+    // Appli installée sur iPhone : la fiche « position » en fait partie
+    const pages = await page.evaluate(() => NEWS.reduce((n, e) => n + (e.items || []).filter((it) => !it.editors).length, 0));
+    assert.equal(await page.$$eval("#newsDots span", (d) => d.length), pages);
     await ctx.close();
   }
   {
@@ -587,7 +591,7 @@ try {
   // Nouveautés : présentées une seule fois après une mise à jour, puis dans les Réglages
   // Sans code d'édition (C), les fiches `editors` ne sont pas présentées au lancement
   const newsCount = (v, all = false) => C.evaluate(([v, all]) => NEWS.filter((e) => cmpVersion(e.v, v) > 0)
-    .reduce((n, e) => n + (e.items || []).filter((it) => all || !it.editors).length, 0), [v, all]);
+    .reduce((n, e) => n + (e.items || []).filter((it) => (all || !it.editors) && (!it.iphone || PosHelp.wanted)).length, 0), [v, all]);
   assert.equal(await C.isVisible("#news"), false);
   await C.evaluate(() => localStorage.setItem("newsSeen", JSON.stringify("1.7.2")));
   await C.reload(); await C.waitForSelector("#news[open]");
@@ -612,7 +616,8 @@ try {
   ok("nouveautés : utilisateur d'une version sans cet écran → depuis la 1.7, « Passer » ferme");
   await C.click("#openSettings"); await C.click("#setNews"); await C.waitForTimeout(300);
   assert.equal(await C.$$eval(".nw-item", (b) => b.length), await newsCount("0", true));
-  assert.equal(await C.$$eval(".nw", (b) => b.length), await C.evaluate(() => NEWS.length));
+  // Versions sans rien pour ce téléphone (seulement des fiches réservées à l'appli installée sur iPhone) : pas listées
+  assert.equal(await C.$$eval(".nw", (b) => b.length), await C.evaluate(() => NEWS.filter((e) => e.fixes || (e.items || []).some((it) => !it.iphone || PosHelp.wanted)).length));
   assert.equal(await C.$$eval(".nw-fix", (b) => b.length), await C.evaluate(() => NEWS.reduce((n, e) => n + (e.fixes || []).length, 0)));
   assert.equal(await C.$$eval(".nw-fix .chev", (b) => b.length), 0);
   assert.equal(await C.isVisible('.nw-item:has-text("codes Google")'), true);

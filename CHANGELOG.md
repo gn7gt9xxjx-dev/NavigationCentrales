@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.17.2
+- **Fiche « La position sans question chaque jour »** dans les nouveautés, avec une illustration animée (`NEWS_ART.position` : menu ☰ de Safari, « Réglages du site web… », puis « Position » qui passe de « Demander » à « Autoriser »). Présentée une fois après la mise à jour et dans le didacticiel, **seulement dans l'appli installée sur iPhone** : nouvelle option `iphone: true` des fiches (`fits()` dans `News`), ni présentée ni listée ailleurs.
+
 ## 1.17.1
 - **Position sans question** : étapes corrigées d'après un essai sur iPhone. Safari n'a plus de bouton « aA » : c'est le menu à trois traits (le dernier plus court) à gauche de l'adresse, dessiné dans le texte (`.ico-inline`), puis « Réglages du site web », **« Position »** (et non « Localisation ») › « Autoriser », validé par la coche. On ferme ensuite Safari : l'appli de l'écran d'accueil garde le réglage.
 
