@@ -1619,7 +1619,7 @@ const cmpVersion = (a, b) => {
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
   { v: "1.16.1", date: "14 novembre 2026", fixes: [
-    "iPhone : l'aide à l'installation montre l'icône du bouton Partager.",
+    "iPhone, tous navigateurs : l'aide à l'installation montre l'icône du bouton Partager.",
   ] },
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
@@ -2314,7 +2314,7 @@ function installSteps() {
   return {
     intro: "Sur iPhone, Apple impose de le faire à la main :",
     steps: [/CriOS/.test(ua) ? `Touchez le bouton ${share}, à droite de la barre d'adresse.`
-      : other ? "Ouvrez le menu du navigateur (☰ ou ⋯) et touchez <strong>Partager</strong>."
+      : other ? `Ouvrez le menu du navigateur (☰ ou ⋯) et touchez ${share}.`
       : `Touchez le bouton ${share}, en bas de l'écran. S'il n'y est pas, touchez d'abord <strong>⋯</strong>.`, ...iosEnd],
     after: "Ouvrez ensuite l'appli depuis l'icône."
       + (other ? " Si « Sur l'écran d'accueil » n'apparaît pas (iPhone pas à jour), ouvrez cette adresse dans Safari." : ""),
