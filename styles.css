@@ -136,8 +136,8 @@ main { max-width: 640px; margin: 0 auto; padding: 4px 16px 32px; }
 .update + .update { margin-top: 8px; }
 .steps { margin: 0 0 12px 1.4em; color: var(--ink); font-size: 1.0625rem; line-height: 1.4; }
 .steps li { margin-bottom: 8px; }
-/* Icône Partager de Safari dans les étapes d'installation, à la taille du texte */
-.ios-share { width: 1.25em; height: 1.25em; vertical-align: -.25em; fill: none; stroke: var(--sign); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Icônes dans les étapes d'installation (Partager sur iPhone, menu ⋮ de Firefox), à la taille du texte */
+.ico-inline { width: 1.25em; height: 1.25em; vertical-align: -.25em; fill: none; stroke: var(--sign); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .update button {
   min-height: 44px; padding: 0 16px; border-radius: 10px; flex: none;
   background: var(--sign-ink); color: var(--sign); font-weight: 700; font-size: 1rem;

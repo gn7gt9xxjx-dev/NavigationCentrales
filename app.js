@@ -1620,6 +1620,7 @@ const cmpVersion = (a, b) => {
 const NEWS = [
   { v: "1.16.1", date: "14 novembre 2026", fixes: [
     "iPhone, tous navigateurs : l'aide à l'installation montre l'icône du bouton Partager.",
+    "Firefox sur Android : l'aide à l'installation montre l'icône du menu.",
   ] },
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
@@ -2300,12 +2301,15 @@ let installEvent = null;
 function installSteps() {
   const ua = navigator.userAgent;
   // Icône Partager dessinée dans le texte (carré ouvert en haut, flèche vers le haut), comme dans Safari.
-  const share = `<strong>Partager</strong> <svg class="ios-share" viewBox="0 0 24 24" role="img" aria-label="(icône carré avec une flèche vers le haut)">`
+  const share = `<strong>Partager</strong> <svg class="ico-inline" viewBox="0 0 24 24" role="img" aria-label="(icône carré avec une flèche vers le haut)">`
     + `<path d="M8.5 9.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.5a2 2 0 0 0-2-2h-1.5M12 14.5V2.5M8 6.5l4-4 4 4"/></svg>`;
+  // Menu ⋮ de Firefox sur Android, dessiné de la même façon.
+  const menu = `<svg class="ico-inline" viewBox="0 0 24 24" role="img" aria-label="(icône trois points verticaux)">`
+    + `<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>`;
   const iosEnd = ["Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.", "Touchez <strong>Ajouter</strong>."];
   if (isFirefoxAndroid) return {
     intro: "Dans Firefox, passez par le menu :",
-    steps: ["Touchez le menu <strong>⋮</strong>, en haut ou en bas de l'écran.",
+    steps: [`Touchez le menu ${menu}, en haut ou en bas de l'écran.`,
       "Touchez <strong>Installer</strong>. S'il n'y est pas : <strong>Plus</strong>, puis <strong>Ajouter à l'écran d'accueil</strong>.",
       "Touchez <strong>Ajouter</strong>."],
     after: "Ouvrez ensuite l'appli depuis l'icône.",
