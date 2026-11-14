@@ -1592,7 +1592,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.16.0";
+const APP_VERSION = "1.17.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1618,6 +1618,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.17.0", date: "14 novembre 2026", fixes: [
+    "Safari sur iPhone : une flèche montre le bouton Partager dans l'aide à l'installation.",
+  ] },
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
       text: isApple
@@ -2293,6 +2296,9 @@ async function init() {
 // Android / ordinateur (Chrome, Edge, Samsung Internet…) : le navigateur fournit une invite d'installation.
 // iPhone et Firefox sur Android : aucune API, on explique la marche à suivre, selon le navigateur.
 let installEvent = null;
+// Safari sur iPhone (pas iPad, pas Chrome, Firefox, Edge… qui ont leur propre barre d'outils).
+const isSafariPhone = /iPhone|iPod/.test(navigator.userAgent)
+  && !/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA\//.test(navigator.userAgent);
 
 function installSteps() {
   const ua = navigator.userAgent;
@@ -2310,7 +2316,7 @@ function installSteps() {
     intro: "Sur iPhone, Apple impose de le faire à la main :",
     steps: [/CriOS/.test(ua) ? `Touchez le bouton ${share}, à droite de la barre d'adresse.`
       : other ? "Ouvrez le menu du navigateur (☰ ou ⋯) et touchez <strong>Partager</strong>."
-      : `Touchez le bouton ${share}, en bas de l'écran. S'il n'y est pas, touchez d'abord <strong>⋯</strong>.`, ...iosEnd],
+      : `Touchez le bouton ${share}, en bas de l'écran${isSafariPhone ? ", sous la flèche blanche" : ""}. S'il n'y est pas, touchez d'abord <strong>⋯</strong>.`, ...iosEnd],
     after: "Ouvrez ensuite l'appli depuis l'icône."
       + (other ? " Si « Sur l'écran d'accueil » n'apparaît pas (iPhone pas à jour), ouvrez cette adresse dans Safari." : ""),
   };
@@ -2332,6 +2338,9 @@ $("#installGo").addEventListener("click", async () => {
   } else {
     const { intro, steps, after } = installSteps();
     $("#installSteps").innerHTML = `<p>${intro}</p><ol class="steps">${steps.map((s) => `<li>${s}</li>`).join("")}</ol><p>${after}</p>`;
+    // Safari sur iPhone : flèche qui rebondit vers le bouton Partager (au milieu de la barre du bas).
+    // Pas sur iPad ni dans les autres navigateurs : le bouton est ailleurs (en haut, dans un menu).
+    $("#installHelp").classList.toggle("point-share", isSafariPhone);
     $("#installHelp").showModal();
   }
 });
