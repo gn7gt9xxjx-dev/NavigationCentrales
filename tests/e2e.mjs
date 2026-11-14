@@ -101,7 +101,8 @@ try {
     assert.equal(await page.isVisible("#install"), true);
     assert.equal(await page.isVisible("#installNo"), true);
     await page.click("#installGo"); await page.waitForTimeout(300);
-    assert.match(await page.textContent("#installSteps"), /Dans Firefox.*menu ⋮.*Installer/);
+    assert.match(await page.textContent("#installSteps"), /Dans Firefox.*menu.*Installer/);
+    assert.equal(await page.isVisible("#installSteps svg.ico-inline"), true);   // icône du menu ⋮
     await page.click("#installHelpClose"); await page.waitForTimeout(200);
     await page.click(".row"); await page.waitForTimeout(300);
     const waze = await page.getAttribute("#goWaze", "href"), gmaps = await page.getAttribute("#goGmaps", "href");
