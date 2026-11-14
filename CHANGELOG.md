@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.17.3
+- Nouveautés : la version 1.17.2 n'apparaissait pas dans la liste hors de l'appli installée sur iPhone (Safari, Android), sa seule fiche y étant masquée. Elle a maintenant une ligne de correction, visible partout ; la fiche animée reste réservée à l'appli installée.
+
 ## 1.17.2
 - **Fiche « La position sans question chaque jour »** dans les nouveautés, avec une illustration animée (`NEWS_ART.position` : menu ☰ de Safari, « Réglages du site web… », puis « Position » qui passe de « Demander » à « Autoriser »). Présentée une fois après la mise à jour et dans le didacticiel, **seulement dans l'appli installée sur iPhone** : nouvelle option `iphone: true` des fiches (`fits()` dans `News`), ni présentée ni listée ailleurs.
 
