@@ -2,9 +2,6 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
-## 1.17.0
-- **Aide à l'installation, Safari sur iPhone** : une flèche blanche rebondit sous la fenêtre « Installer l'appli », vers le bouton **Partager** au milieu de la barre de Safari (classe `point-share` sur `#installHelp`, élément `.share-arrow`). La fenêtre flotte alors au-dessus de la flèche ; toucher autour la ferme toujours. Flèche immobile si `prefers-reduced-motion`. Pas de flèche sur iPad ni dans Chrome, Firefox, Edge… (le bouton Partager y est ailleurs).
-
 ## 1.16.0
 - Réglages → **« Applis de navigation »** : interrupteurs pour masquer Waze, Google Maps ou Plans (iPhone) dans la fiche (clé `hiddenApps`), et **« Autre appli »** qui ajoute un bouton de plus (clé `otherApp`, liste `OTHER_APPS`). Au moins un bouton reste toujours dans la fiche. L'autre appli suit la règle « dernière utilisée en premier », et le message « Pas de réseau » cite les applis affichées.
 - Une page web ne peut pas savoir quelles applis sont installées : liste d'applis connues. iPhone : schéma de chaque appli (HERE WeGo `here-route://`, Magic Earth `magicearth://?drive_to`, Organic Maps `om://map`, OsmAnd `osmandmaps://navigate`, Sygic `com.sygic.aura://coordinate`, TomTom GO `tomtomgo://x-callback-url/navigate`) et en fin de liste « Appli par défaut de l'iPhone » (`geo-navigation:`, iOS 18.4, Réglages › Apps › Apps par défaut › Navigation). Android : lien `geo:`, soit « Au choix » (le téléphone propose ses applis GPS, « Toujours » pour garder la sienne), soit donné à une appli précise par `intent:` (mêmes applis, TomTom GO compris ; page du Play Store si elle manque). Pas de Coyote : aucun lien connu pour lui donner une destination. Pas d'autre appli sur ordinateur.
