@@ -384,6 +384,33 @@ function locate() {
   );
 }
 
+// iPhone, appli installée : l'iPhone ne garde l'accès à la position que pour la journée et
+// redemande chaque jour. Le réglage du site dans Safari (aA › Réglages du site web › Localisation
+// › Autoriser) évite la question : on l'explique la première fois qu'on ouvre « Autour de moi »
+// (puis Réglages → Position), avec l'adresse de l'appli qui l'ouvre dans Safari (`x-safari-https:`,
+// iOS 17 et suivants ; un lien normal resterait dans l'appli).
+// Android : Chrome et Firefox gardent l'autorisation, rien à expliquer.
+const PosHelp = (() => {
+  const dlg = $("#posHelp"), link = $("#posHelpLink");
+  const wanted = isApple && isStandalone;
+  const url = location.origin + location.pathname;
+  link.href = `x-safari-${url}`;
+  link.textContent = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  let after = null;
+  function open(then) { after = then || null; dlg.showModal(); }
+  dlg.addEventListener("close", () => { const f = after; after = null; f?.(); });
+  $("#posHelpClose").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  // Premier passage dans « Autour de moi » : l'explication d'abord, la question de l'iPhone à la fermeture.
+  function maybeShow(then) {
+    if (!wanted || store.get("posHelpSeen", false)) return false;
+    store.set("posHelpSeen", true);
+    open(then);
+    return true;
+  }
+  return { wanted, open, maybeShow };
+})();
+
 /* ===================== Feuille de lancement ===================== */
 
 const sheet = $("#sheet");
@@ -1101,7 +1128,10 @@ function bind() {
   document.querySelectorAll(".modes button").forEach((b) => b.addEventListener("click", () => {
     state.mode = b.dataset.mode;
     document.querySelectorAll(".modes button").forEach((x) => x.setAttribute("aria-selected", x === b));
-    if (state.mode === "near" && !state.pos && !state.locating) locate();
+    if (state.mode === "near") {
+      const go = () => { if (state.mode === "near" && !state.pos && !state.locating) locate(); };
+      if (!PosHelp.maybeShow(go)) go();
+    }
     render();
     window.scrollTo(0, 0);
   }));
@@ -1175,6 +1205,8 @@ function bind() {
     store.set("sheetMap", b.dataset.layer);
     renderSettings();
   }));
+  $("#setPos").hidden = !PosHelp.wanted;
+  $("#setPosGo").addEventListener("click", () => PosHelp.open());
   $("#setAppPlans").hidden = !isApple;
   $("#setApps").querySelectorAll("input").forEach((box) => box.addEventListener("change", () => setAppShown(box.dataset.app, box.checked)));
   $("#setOther").hidden = !OTHER_APPS.length;   // ordinateur : pas d'autre appli
@@ -1592,7 +1624,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.16.1";
+const APP_VERSION = "1.17.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1618,7 +1650,8 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
-  { v: "1.16.1", date: "14 novembre 2026", fixes: [
+  { v: "1.17.0", date: "14 novembre 2026", fixes: [
+    "iPhone, appli installée : explication pour ne plus avoir chaque jour la question de la position (« Autour de moi », Réglages → Position).",
     "iPhone, tous navigateurs : l'aide à l'installation montre l'icône du bouton Partager.",
     "Firefox sur Android : l'aide à l'installation montre l'icône du menu.",
   ] },

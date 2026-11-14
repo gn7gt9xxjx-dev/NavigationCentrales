@@ -2,7 +2,8 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
-## 1.16.1
+## 1.17.0
+- **iPhone, appli installée : position sans question chaque jour.** L'iPhone ne garde l'accès à la position d'une appli de l'écran d'accueil que pour la journée. Au premier passage dans « Autour de moi » (clé `posHelpSeen`), fenêtre `#posHelp` (module `PosHelp`) : autoriser la position une fois pour toutes dans Safari (aA › Réglages du site web › Localisation › Autoriser), avec l'adresse de l'appli en lien `x-safari-https://…` qui l'ouvre dans Safari (iOS 17 et suivants ; un lien normal resterait dans l'appli). La demande de position de l'iPhone vient à la fermeture de la fenêtre. Ensuite : Réglages → **Position** → « Ne plus avoir la question ». Rien sur Android (Chrome et Firefox gardent l'autorisation) ni dans Safari même.
 - **Aide à l'installation, iPhone (Safari, Chrome, Firefox, Edge…)** : l'étape « Partager » montre l'icône du bouton (carré avec une flèche vers le haut, dessinée en SVG dans le texte, classe `.ico-inline`) au lieu de la décrire.
 - **Firefox sur Android** : même chose pour le menu ⋮ (trois points dessinés au lieu du caractère).
 

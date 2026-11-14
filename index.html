@@ -224,6 +224,25 @@
     </div>
   </dialog>
 
+  <!-- Position sans question chaque jour (iPhone, appli installée) : voir PosHelp dans app.js -->
+  <dialog class="sheet" id="posHelp" aria-labelledby="posHelpTitle">
+    <div class="sheet-body settings" tabindex="-1" autofocus>
+      <div class="sheet-head">
+        <h2 id="posHelpTitle">Position sans question</h2>
+        <button type="button" class="link" id="posHelpClose">Fermer</button>
+      </div>
+      <p>L'iPhone redemande chaque jour à l'appli l'accès à votre position. Pour ne plus avoir la question, autorisez-le une fois pour toutes dans Safari :</p>
+      <ol class="steps">
+        <li>Touchez l'adresse ci-dessous : l'appli s'ouvre dans Safari.</li>
+        <li>Touchez <strong>aA</strong> à gauche de l'adresse (ou l'icône à sa place), puis <strong>Réglages du site web</strong>.</li>
+        <li>Touchez <strong>Localisation</strong>, puis <strong>Autoriser</strong>.</li>
+        <li>Revenez dans l'appli depuis son icône.</li>
+      </ol>
+      <a class="pos-link" id="posHelpLink" href="#"></a>
+      <small>Si la question revient quand même : Réglages de l'iPhone › Confidentialité et sécurité › Service de localisation › Sites web Safari › « Lorsque l'app est active ».</small>
+    </div>
+  </dialog>
+
   <!-- Fichier de favoris : charger un fichier existant ou en créer un (voir FavFile dans app.js) -->
   <dialog class="sheet" id="favFile" aria-labelledby="favFileTitle">
     <div class="sheet-body settings" tabindex="-1" autofocus>
@@ -313,6 +332,12 @@
           </label>
           <small id="setOtherHelp"></small>
         </div>
+      </section>
+
+      <section id="setPos" hidden>
+        <h3>Position</h3>
+        <p>L'iPhone redemande chaque jour l'accès à votre position ? Autorisez-le une fois pour toutes.</p>
+        <button type="button" class="btn-plain wide" id="setPosGo">Ne plus avoir la question</button>
       </section>
 
       <section>
