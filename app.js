@@ -384,6 +384,33 @@ function locate() {
   );
 }
 
+// iPhone, appli installée : l'iPhone ne garde l'accès à la position que pour la journée et
+// redemande chaque jour. Le réglage du site dans Safari (aA › Réglages du site web › Localisation
+// › Autoriser) évite la question : on l'explique la première fois qu'on ouvre « Autour de moi »
+// (puis Réglages → Position), avec l'adresse de l'appli qui l'ouvre dans Safari (`x-safari-https:`,
+// iOS 17 et suivants ; un lien normal resterait dans l'appli).
+// Android : Chrome et Firefox gardent l'autorisation, rien à expliquer.
+const PosHelp = (() => {
+  const dlg = $("#posHelp"), link = $("#posHelpLink");
+  const wanted = isApple && isStandalone;
+  const url = location.origin + location.pathname;
+  link.href = `x-safari-${url}`;
+  link.textContent = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  let after = null;
+  function open(then) { after = then || null; dlg.showModal(); }
+  dlg.addEventListener("close", () => { const f = after; after = null; f?.(); });
+  $("#posHelpClose").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  // Premier passage dans « Autour de moi » : l'explication d'abord, la question de l'iPhone à la fermeture.
+  function maybeShow(then) {
+    if (!wanted || store.get("posHelpSeen", false)) return false;
+    store.set("posHelpSeen", true);
+    open(then);
+    return true;
+  }
+  return { wanted, open, maybeShow };
+})();
+
 /* ===================== Feuille de lancement ===================== */
 
 const sheet = $("#sheet");
@@ -1101,7 +1128,10 @@ function bind() {
   document.querySelectorAll(".modes button").forEach((b) => b.addEventListener("click", () => {
     state.mode = b.dataset.mode;
     document.querySelectorAll(".modes button").forEach((x) => x.setAttribute("aria-selected", x === b));
-    if (state.mode === "near" && !state.pos && !state.locating) locate();
+    if (state.mode === "near") {
+      const go = () => { if (state.mode === "near" && !state.pos && !state.locating) locate(); };
+      if (!PosHelp.maybeShow(go)) go();
+    }
     render();
     window.scrollTo(0, 0);
   }));
@@ -1175,6 +1205,8 @@ function bind() {
     store.set("sheetMap", b.dataset.layer);
     renderSettings();
   }));
+  $("#setPos").hidden = !PosHelp.wanted;
+  $("#setPosGo").addEventListener("click", () => PosHelp.open());
   $("#setAppPlans").hidden = !isApple;
   $("#setApps").querySelectorAll("input").forEach((box) => box.addEventListener("change", () => setAppShown(box.dataset.app, box.checked)));
   $("#setOther").hidden = !OTHER_APPS.length;   // ordinateur : pas d'autre appli
@@ -1592,7 +1624,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.16.0";
+const APP_VERSION = "1.17.0";
 
 async function renderVersion() {
   let cache = "";
@@ -1618,6 +1650,11 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.17.0", date: "14 novembre 2026", fixes: [
+    "iPhone, appli installée : explication pour ne plus avoir chaque jour la question de la position (« Autour de moi », Réglages → Position).",
+    "iPhone, tous navigateurs : l'aide à l'installation montre l'icône du bouton Partager.",
+    "Firefox sur Android : l'aide à l'installation montre l'icône du menu.",
+  ] },
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
       text: isApple
@@ -2296,11 +2333,16 @@ let installEvent = null;
 
 function installSteps() {
   const ua = navigator.userAgent;
-  const share = "<strong>Partager</strong> (le carré avec une flèche vers le haut)";
+  // Icône Partager dessinée dans le texte (carré ouvert en haut, flèche vers le haut), comme dans Safari.
+  const share = `<strong>Partager</strong> <svg class="ico-inline" viewBox="0 0 24 24" role="img" aria-label="(icône carré avec une flèche vers le haut)">`
+    + `<path d="M8.5 9.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.5a2 2 0 0 0-2-2h-1.5M12 14.5V2.5M8 6.5l4-4 4 4"/></svg>`;
+  // Menu ⋮ de Firefox sur Android, dessiné de la même façon.
+  const menu = `<svg class="ico-inline" viewBox="0 0 24 24" role="img" aria-label="(icône trois points verticaux)">`
+    + `<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>`;
   const iosEnd = ["Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.", "Touchez <strong>Ajouter</strong>."];
   if (isFirefoxAndroid) return {
     intro: "Dans Firefox, passez par le menu :",
-    steps: ["Touchez le menu <strong>⋮</strong>, en haut ou en bas de l'écran.",
+    steps: [`Touchez le menu ${menu}, en haut ou en bas de l'écran.`,
       "Touchez <strong>Installer</strong>. S'il n'y est pas : <strong>Plus</strong>, puis <strong>Ajouter à l'écran d'accueil</strong>.",
       "Touchez <strong>Ajouter</strong>."],
     after: "Ouvrez ensuite l'appli depuis l'icône.",
@@ -2309,7 +2351,7 @@ function installSteps() {
   return {
     intro: "Sur iPhone, Apple impose de le faire à la main :",
     steps: [/CriOS/.test(ua) ? `Touchez le bouton ${share}, à droite de la barre d'adresse.`
-      : other ? "Ouvrez le menu du navigateur (☰ ou ⋯) et touchez <strong>Partager</strong>."
+      : other ? `Ouvrez le menu du navigateur (☰ ou ⋯) et touchez ${share}.`
       : `Touchez le bouton ${share}, en bas de l'écran. S'il n'y est pas, touchez d'abord <strong>⋯</strong>.`, ...iosEnd],
     after: "Ouvrez ensuite l'appli depuis l'icône."
       + (other ? " Si « Sur l'écran d'accueil » n'apparaît pas (iPhone pas à jour), ouvrez cette adresse dans Safari." : ""),

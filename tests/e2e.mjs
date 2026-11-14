@@ -101,7 +101,8 @@ try {
     assert.equal(await page.isVisible("#install"), true);
     assert.equal(await page.isVisible("#installNo"), true);
     await page.click("#installGo"); await page.waitForTimeout(300);
-    assert.match(await page.textContent("#installSteps"), /Dans Firefox.*menu ⋮.*Installer/);
+    assert.match(await page.textContent("#installSteps"), /Dans Firefox.*menu.*Installer/);
+    assert.equal(await page.isVisible("#installSteps svg.ico-inline"), true);   // icône du menu ⋮
     await page.click("#installHelpClose"); await page.waitForTimeout(200);
     await page.click(".row"); await page.waitForTimeout(300);
     const waze = await page.getAttribute("#goWaze", "href"), gmaps = await page.getAttribute("#goGmaps", "href");
@@ -215,6 +216,32 @@ try {
     assert.equal(await page.textContent("#newsKicker"), "Bienvenue");
     await ctx.close();
   }
+  {
+    // Appli installée sur iPhone : explication de la position au premier passage dans « Autour de moi »
+    const { ctx, page } = await phone(undefined, { standalone: true });
+    if (await page.isVisible("#favFile")) { await page.click("#favFileLater"); await page.waitForTimeout(200); }
+    await page.click('[data-mode="near"]'); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#posHelp"), true);
+    assert.match(await page.getAttribute("#posHelpLink", "href"), /^x-safari-https?:\/\/localhost:\d+\/$/);
+    await page.click("#posHelpClose"); await page.waitForSelector("#list .row");   // la position est demandée ensuite
+    await page.click('[data-mode="az"]'); await page.click('[data-mode="near"]'); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#posHelp"), false);                          // une seule fois
+    await page.click("#openSettings"); await page.waitForTimeout(300);
+    await page.click("#setPosGo"); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#posHelp"), true);                           // puis Réglages → Position
+    assert.deepEqual(page.errors, []);
+    await ctx.close();
+  }
+  {
+    // Safari (appli non installée) : ni explication, ni rubrique Position
+    const { ctx, page } = await phone();
+    await page.click('[data-mode="near"]'); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#posHelp"), false);
+    await page.click("#openSettings"); await page.waitForTimeout(300);
+    assert.equal(await page.isVisible("#setPos"), false);
+    await ctx.close();
+  }
+  ok("iPhone, appli installée : explication de la position au premier « Autour de moi », puis dans Réglages ; pas dans Safari");
   ok("didacticiel au premier lancement (Android, appli installée sur iPhone), puis la question des favoris ; plus ensuite");
   await A.fill("#q", "st lau"); await A.waitForTimeout(200);
   assert.deepEqual(await names(A), ["CNPE St Laurent"]);
