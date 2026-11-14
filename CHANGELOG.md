@@ -2,6 +2,9 @@
 
 Le numéro est visible dans Réglages → À propos. Il faut l'incrémenter (avec `VERSION` dans `sw.js`) à chaque modification de fichier servi.
 
+## 1.16.1
+- **Aide à l'installation, iPhone** : l'étape « Partager » montre l'icône du bouton (carré avec une flèche vers le haut, dessinée en SVG dans le texte, classe `.ios-share`) au lieu de la décrire.
+
 ## 1.16.0
 - Réglages → **« Applis de navigation »** : interrupteurs pour masquer Waze, Google Maps ou Plans (iPhone) dans la fiche (clé `hiddenApps`), et **« Autre appli »** qui ajoute un bouton de plus (clé `otherApp`, liste `OTHER_APPS`). Au moins un bouton reste toujours dans la fiche. L'autre appli suit la règle « dernière utilisée en premier », et le message « Pas de réseau » cite les applis affichées.
 - Une page web ne peut pas savoir quelles applis sont installées : liste d'applis connues. iPhone : schéma de chaque appli (HERE WeGo `here-route://`, Magic Earth `magicearth://?drive_to`, Organic Maps `om://map`, OsmAnd `osmandmaps://navigate`, Sygic `com.sygic.aura://coordinate`, TomTom GO `tomtomgo://x-callback-url/navigate`) et en fin de liste « Appli par défaut de l'iPhone » (`geo-navigation:`, iOS 18.4, Réglages › Apps › Apps par défaut › Navigation). Android : lien `geo:`, soit « Au choix » (le téléphone propose ses applis GPS, « Toujours » pour garder la sienne), soit donné à une appli précise par `intent:` (mêmes applis, TomTom GO compris ; page du Play Store si elle manque). Pas de Coyote : aucun lien connu pour lui donner une destination. Pas d'autre appli sur ordinateur.

@@ -1592,7 +1592,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.16.0";
+const APP_VERSION = "1.16.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1618,6 +1618,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.16.1", date: "14 novembre 2026", fixes: [
+    "iPhone : l'aide à l'installation montre l'icône du bouton Partager.",
+  ] },
   { v: "1.16.0", date: "25 octobre 2026", items: [
     { art: "navapps", title: "Choisir ses applis de navigation",
       text: isApple
@@ -2296,7 +2299,9 @@ let installEvent = null;
 
 function installSteps() {
   const ua = navigator.userAgent;
-  const share = "<strong>Partager</strong> (le carré avec une flèche vers le haut)";
+  // Icône Partager dessinée dans le texte (carré ouvert en haut, flèche vers le haut), comme dans Safari.
+  const share = `<strong>Partager</strong> <svg class="ios-share" viewBox="0 0 24 24" role="img" aria-label="(icône carré avec une flèche vers le haut)">`
+    + `<path d="M8.5 9.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.5a2 2 0 0 0-2-2h-1.5M12 14.5V2.5M8 6.5l4-4 4 4"/></svg>`;
   const iosEnd = ["Faites défiler et touchez <strong>Sur l'écran d'accueil</strong>.", "Touchez <strong>Ajouter</strong>."];
   if (isFirefoxAndroid) return {
     intro: "Dans Firefox, passez par le menu :",
