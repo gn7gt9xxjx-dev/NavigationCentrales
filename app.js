@@ -1624,7 +1624,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.17.2";
+const APP_VERSION = "1.17.3";
 
 async function renderVersion() {
   let cache = "";
@@ -1651,6 +1651,9 @@ const cmpVersion = (a, b) => {
 // `iphone: true` : seulement dans l'appli installée sur iPhone (présentée et listée).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.17.3", date: "14 novembre 2026", fixes: [
+    "Nouveautés : la version 1.17.2 est listée aussi dans Safari et sur Android.",
+  ] },
   { v: "1.17.2", date: "14 novembre 2026", items: [
     { art: "position", iphone: true, title: "La position sans question chaque jour",
       text: "L'iPhone redemande chaque jour l'accès à votre position. Autorisez-le une fois pour toutes dans Safari : l'appli garde le réglage.",
@@ -1659,6 +1662,8 @@ const NEWS = [
         "Dans Safari, touchez le menu ☰ à gauche de l'adresse, puis « Réglages du site web ».",
         "Touchez « Position », choisissez « Autoriser » et validez. Fermez Safari : c'est fini.",
       ] },
+  ], fixes: [
+    "iPhone, appli installée : fiche illustrée pour ne plus avoir chaque jour la question de la position.",
   ] },
   { v: "1.17.1", date: "14 novembre 2026", fixes: [
     "Position sans question : étapes conformes au Safari actuel (menu ☰, « Position »).",
