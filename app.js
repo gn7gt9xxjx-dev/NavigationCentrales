@@ -385,8 +385,8 @@ function locate() {
 }
 
 // iPhone, appli installée : l'iPhone ne garde l'accès à la position que pour la journée et
-// redemande chaque jour. Le réglage du site dans Safari (aA › Réglages du site web › Localisation
-// › Autoriser) évite la question : on l'explique la première fois qu'on ouvre « Autour de moi »
+// redemande chaque jour. Le réglage du site dans Safari (menu ☰ à gauche de l'adresse › Réglages du
+// site web › Position › Autoriser, essayé sur iPhone) évite la question : on l'explique la première fois qu'on ouvre « Autour de moi »
 // (puis Réglages → Position), avec l'adresse de l'appli qui l'ouvre dans Safari (`x-safari-https:`,
 // iOS 17 et suivants ; un lien normal resterait dans l'appli).
 // Android : Chrome et Firefox gardent l'autorisation, rien à expliquer.
@@ -1624,7 +1624,7 @@ const Editor = (() => {
 /* ===================== Version ===================== */
 
 // À incrémenter avec VERSION dans sw.js (voir CHANGELOG.md).
-const APP_VERSION = "1.17.0";
+const APP_VERSION = "1.17.1";
 
 async function renderVersion() {
   let cache = "";
@@ -1650,6 +1650,9 @@ const cmpVersion = (a, b) => {
 // téléphones qui ont le code d'édition (à sa première validation s'il est saisi plus tard).
 // `fixes` : corrections et changements sans fiche, en quelques mots (listés, jamais présentés).
 const NEWS = [
+  { v: "1.17.1", date: "14 novembre 2026", fixes: [
+    "Position sans question : étapes conformes au Safari actuel (menu ☰, « Position »).",
+  ] },
   { v: "1.17.0", date: "14 novembre 2026", fixes: [
     "iPhone, appli installée : explication pour ne plus avoir chaque jour la question de la position (« Autour de moi », Réglages → Position).",
     "iPhone, tous navigateurs : l'aide à l'installation montre l'icône du bouton Partager.",
